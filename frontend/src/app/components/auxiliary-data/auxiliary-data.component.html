@@ -1,0 +1,295 @@
+<div class="admin-container">
+  <h1>Gestión de Datos Auxiliares</h1>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'rarities'" (click)="setActiveTab('rarities')">
+      Rarezas
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'elements'" (click)="setActiveTab('elements')">
+      Elementos
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'techtypes'" (click)="setActiveTab('techtypes')">
+      Tipos de técnica
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'playerbases'" (click)="setActiveTab('playerbases')">
+      Nombres de jugador
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'countries'" (click)="setActiveTab('countries')">
+      Países
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'series'" (click)="setActiveTab('series')">
+      Series
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'teams'" (click)="setActiveTab('teams')">
+      Equipos
+    </button>
+  </div>
+
+  <!-- Rarities Tab -->
+  <div *ngIf="activeTab === 'rarities'" class="tab-content">
+    <h2>Rarezas</h2>
+    <p class="tab-description">UR, SSR, SR, R, N. Se usan en el formulario de jugadores.</p>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newRarity.name" placeholder="Nombre (ej. UR, SSR)" class="input-field">
+      <button type="button" (click)="createRarity()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let r of rarities" class="list-item">
+        <div *ngIf="editingRarity?.id !== r.id" class="list-item-content">
+          <span>{{ r.name }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editRarity(r)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteRarity(r.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingRarity && editingRarity.id === r.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingRarity.name" class="input-field">
+          <div class="item-actions">
+            <button type="button" (click)="updateRarity()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Elements Tab -->
+  <div *ngIf="activeTab === 'elements'" class="tab-content">
+    <h2>Elementos</h2>
+    <p class="tab-description">Afinidades (ej. Agilidad, Fuerza, Destreza). Define "Ventaja sobre" para los cálculos de afinidad en duelos.</p>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newElement.name" placeholder="Nombre (ej. Agilidad, Fuerza)" class="input-field">
+      <button type="button" (click)="createElement()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let e of elements" class="list-item">
+        <div *ngIf="editingElement?.id !== e.id" class="list-item-content">
+          <span>{{ e.name }}{{ e.advantageOver ? ' → vence a ' + e.advantageOver.name : '' }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editElement(e)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteElement(e.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingElement && editingElement.id === e.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingElement.name" class="input-field" placeholder="Nombre">
+          <label class="select-label">Ventaja sobre:</label>
+          <select [(ngModel)]="editingElement.advantageOverElementId" class="input-field select-field">
+            <option [ngValue]="null">— Ninguno —</option>
+            <option *ngFor="let el of elements" [ngValue]="el.id" [disabled]="el.id === e.id">{{ el.name }}</option>
+          </select>
+          <div class="item-actions">
+            <button type="button" (click)="updateElement()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TechTypes Tab -->
+  <div *ngIf="activeTab === 'techtypes'" class="tab-content">
+    <h2>Tipos de técnica</h2>
+    <p class="tab-description">Remate, Volea, Regate, etc. Indica bono de balón y qué posiciones pueden usar este tipo al asignar técnicas a un jugador (vacío = todas).</p>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newTechType.name" placeholder="Nombre (ej. Remate, Volea)" class="input-field">
+      <div class="checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="newTechType.appliesLowBallBonus">
+          <span>Bono balón bajo</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="newTechType.appliesHighBallBonus">
+          <span>Bono balón alto</span>
+        </label>
+      </div>
+      <div class="checkbox-group positions-group">
+        <span class="positions-label">Posiciones:</span>
+        <label *ngFor="let code of positionCodes" class="checkbox-label">
+          <input type="checkbox" [checked]="isTechTypePositionSelected(code, true)" (change)="toggleTechTypePosition(code, true)">
+          <span>{{ code }}</span>
+        </label>
+      </div>
+      <button type="button" (click)="createTechType()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let t of techTypes" class="list-item">
+        <div *ngIf="editingTechType?.id !== t.id" class="list-item-content">
+          <span>{{ t.name }}{{ t.appliesLowBallBonus ? ' · bono bajo' : '' }}{{ t.appliesHighBallBonus ? ' · bono alto' : '' }}{{ (t.allowedPositionCodes?.length) ? ' · ' + (t.allowedPositionCodes?.join(', ') ?? '') : ' · todas' }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editTechType(t)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteTechType(t.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingTechType && editingTechType.id === t.id" class="edit-form edit-form-techtype">
+          <input type="text" [(ngModel)]="editingTechType.name" class="input-field" placeholder="Nombre">
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editingTechType.appliesLowBallBonus">
+              <span>Bono balón bajo</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editingTechType.appliesHighBallBonus">
+              <span>Bono balón alto</span>
+            </label>
+          </div>
+          <div class="checkbox-group positions-group">
+            <span class="positions-label">Posiciones:</span>
+            <label *ngFor="let code of positionCodes" class="checkbox-label">
+              <input type="checkbox" [checked]="isTechTypePositionSelected(code, false)" (change)="toggleTechTypePosition(code, false)">
+              <span>{{ code }}</span>
+            </label>
+          </div>
+          <div class="item-actions">
+            <button type="button" (click)="updateTechType()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PlayerBases Tab -->
+  <div *ngIf="activeTab === 'playerbases'" class="tab-content">
+    <h2>Nombres de jugador</h2>
+    <p class="tab-description">Nombres base (Tsubasa, Hyuga, etc.) que se usan al dar de alta una versión. El país se asocia al nombre y se muestra en las fichas de jugador. En el formulario de nuevo jugador el nombre se elige por autocompletado desde esta lista.</p>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newPlayerBase.name" placeholder="Nombre (ej. Tsubasa, Hyuga)" class="input-field">
+      <select [(ngModel)]="newPlayerBase.countryId" class="input-field select-country" required>
+        <option [ngValue]="null" disabled>-- Seleccionar país * --</option>
+        <option *ngFor="let c of countries" [ngValue]="c.id">{{ c.name }}</option>
+      </select>
+      <button type="button" (click)="createPlayerBase()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let pb of playerBases" class="list-item">
+        <div *ngIf="editingPlayerBase?.id !== pb.id" class="list-item-content">
+          <span>{{ pb.name }}<span *ngIf="pb.country?.name" class="list-item-meta"> ({{ pb.country?.name }})</span></span>
+          <div class="item-actions">
+            <button type="button" (click)="editPlayerBase(pb)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deletePlayerBase(pb.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingPlayerBase && editingPlayerBase.id === pb.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingPlayerBase.name" class="input-field" placeholder="Nombre">
+          <select [(ngModel)]="editingPlayerBase.countryId" class="input-field select-country" required>
+            <option [ngValue]="null" disabled>-- Seleccionar país * --</option>
+            <option *ngFor="let c of countries" [ngValue]="c.id">{{ c.name }}</option>
+          </select>
+          <div class="item-actions">
+            <button type="button" (click)="updatePlayerBase()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Countries Tab -->
+  <div *ngIf="activeTab === 'countries'" class="tab-content">
+    <h2>Países</h2>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newCountry.name" placeholder="Nombre del país" class="input-field">
+      <button type="button" (click)="createCountry()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let country of countries" class="list-item">
+        <div *ngIf="editingCountry?.id !== country.id" class="list-item-content">
+          <span>{{ country.name }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editCountry(country)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteCountry(country.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingCountry && editingCountry?.id === country.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingCountry.name" class="input-field">
+          <div class="item-actions">
+            <button type="button" (click)="updateCountry()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Series Tab -->
+  <div *ngIf="activeTab === 'series'" class="tab-content">
+    <h2>Series</h2>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newSeries.name" placeholder="Nombre de la serie" class="input-field">
+      <button type="button" (click)="createSeries()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let s of series" class="list-item">
+        <div *ngIf="editingSeries?.id !== s.id" class="list-item-content">
+          <span>{{ s.name }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editSeries(s)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteSeries(s.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingSeries && editingSeries?.id === s.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingSeries.name" class="input-field">
+          <div class="item-actions">
+            <button type="button" (click)="updateSeries()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams Tab -->
+  <div *ngIf="activeTab === 'teams'" class="tab-content">
+    <h2>Equipos</h2>
+    <div class="create-section">
+      <input type="text" [(ngModel)]="newTeam.name" placeholder="Nombre del equipo" class="input-field">
+      <button type="button" (click)="createTeam()" class="btn-primary">Crear</button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let team of teams" class="list-item">
+        <div *ngIf="editingTeam?.id !== team.id" class="list-item-content">
+          <span>{{ team.name }}</span>
+          <div class="item-actions">
+            <button type="button" (click)="editTeam(team)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteTeam(team.id)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editingTeam && editingTeam.id === team.id" class="edit-form">
+          <input type="text" [(ngModel)]="editingTeam.name" class="input-field">
+          <div class="item-actions">
+            <button type="button" (click)="updateTeam()" class="btn-save">Guardar</button>
+            <button type="button" (click)="cancelEdit()" class="btn-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,81 @@
+<div class="player-techniques-container">
+    <div class="header">
+        <button class="btn-back" (click)="goBack()">
+            <span class="material-icons">arrow_back</span>
+            Volver
+        </button>
+        <h1>Técnicas de {{ playerName }}</h1>
+        <button class="btn-create" (click)="openCreateModal()">
+            <span class="material-icons">add</span>
+            Nueva Técnica
+        </button>
+    </div>
+
+    <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando técnicas...</p>
+    </div>
+
+    <div *ngIf="error" class="error">
+        <span class="material-icons error-icon">warning</span>
+        <p>{{ error }}</p>
+        <button class="btn-retry" (click)="loadTechniques()">Reintentar</button>
+    </div>
+
+    <div *ngIf="!loading && !error" class="techniques-container">
+        <div *ngIf="techniques.length === 0" class="no-techniques">
+            <span class="material-icons">info</span>
+            <p>No hay técnicas registradas para este jugador</p>
+            <button class="btn-create" (click)="openCreateModal()">
+                <span class="material-icons">add</span>
+                Crear Primera Técnica
+            </button>
+        </div>
+
+        <div class="techniques-grid">
+            <div *ngFor="let technique of techniques" class="technique-card-wrapper">
+                <div class="technique-card">
+                    <div class="tech-single-line">
+                        <div class="thumb-wrapper">
+                            <img [src]="getTechImageUrl(technique)" [alt]="technique.type" loading="lazy">
+                        </div>
+                        <div class="tech-name-section">
+                            <h3>{{ technique.name }}</h3>
+                        </div>
+                        <div class="tech-stats-section">
+                            <div class="tech-stat-inline" *ngIf="technique.isCombined">
+                                <span class="material-icons combined-icon" title="Técnica Combinada">groups</span>
+                            </div>
+                            <div class="tech-stat-inline">
+                                <span class="label">Poder:</span>
+                                <span class="value">{{ technique.power }}</span>
+                            </div>
+                            <div class="tech-stat-inline">
+                                <span class="label">Stamina:</span>
+                                <span class="value">{{ technique.staminaCost }}</span>
+                            </div>
+                        </div>
+                        <div class="tech-actions-section">
+                            <button class="btn-edit-inline" (click)="openEditModal(technique)" title="Editar">
+                                <span class="material-icons">edit</span>
+                            </button>
+                            <button class="btn-delete-inline" (click)="deleteTechnique(technique)" title="Eliminar">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear/editar técnica -->
+    <app-technique-form-modal
+        [visible]="showCreateModal"
+        [technique]="editingTechnique"
+        [playerName]="playerName"
+        [isGoalkeeper]="false"
+        (save)="onTechniqueSave($event)"
+        (cancel)="onTechniqueCancel()">
+    </app-technique-form-modal>
+</div>

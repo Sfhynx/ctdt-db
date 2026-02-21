@@ -1,0 +1,43 @@
+<div class="technique-manager-container">
+    <div class="header">
+        <h1>Gestión de Técnicas</h1>
+        <button class="btn-back" routerLink="/admin">
+            <span class="material-icons">arrow_back</span>
+            Volver a Admin
+        </button>
+    </div>
+
+    <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando jugadores con técnicas...</p>
+    </div>
+
+    <div *ngIf="error" class="error">
+        <span class="material-icons error-icon">warning</span>
+        <p>{{ error }}</p>
+        <button class="btn-retry" (click)="loadPlayersWithTechniques()">Reintentar</button>
+    </div>
+
+    <div *ngIf="!loading && !error" class="players-grid">
+        <div *ngFor="let player of playersWithTechniques" 
+             class="player-card" 
+             (click)="editPlayerTechniques(player.playerId)"
+             [style.background-image]="'url(' + getImageUrl(player.cardImageUrl) + ')'">
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <h3 class="player-name">{{ player.playerName }}</h3>
+                <div class="card-footer">
+                    <div class="technique-count">
+                        <span class="material-icons">sports_soccer</span>
+                        <span>{{ player.techniqueCount }} {{ player.techniqueCount === 1 ? 'técnica' : 'técnicas' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="!loading && !error && playersWithTechniques.length === 0" class="no-data">
+        <span class="material-icons">info</span>
+        <p>No hay jugadores con técnicas registradas</p>
+    </div>
+</div>

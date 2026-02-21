@@ -1,0 +1,467 @@
+/* Página completa en una vista, sin scroll */
+.resumen-page {
+  position: relative;
+  min-height: 93vh;
+  height: 93vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.resumen-capture-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resumen-afinidad-band {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  border-radius: 12px 0 0 12px;
+  z-index: 0;
+}
+
+.resumen-inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  padding: 1px 8px 4px 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+/* Grid: columna izquierda = tarjeta; derecha = skills arriba, técnicas abajo. Todo debe caber en 100vh con pie y botón. */
+.resumen-main {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  grid-template-rows: auto 1.26fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Columna izquierda: tarjeta ocupa las dos filas (mismo tamaño que el recuadro rojo) */
+.resumen-tl {
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 480px;
+  border-radius: 0 0 0 0;
+  z-index: 0;
+}
+
+/* Tarjeta llena toda la celda; imagen a toda sangre */
+.resumen-player-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0 10px 10px 0;
+  border: 0px solid;
+  overflow: hidden;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.resumen-card-no-image {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+}
+
+.resumen-card-positions {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+}
+
+.resumen-card-positions-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-weight: 700;
+  font-size: clamp(9px, 1.2vw, 11px);
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.resumen-card-category {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+}
+
+.resumen-card-category-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: contain;
+  border-radius: 50%;
+  border: 2px solid #000;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.resumen-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 60%, transparent 100%);
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: auto;
+}
+
+.resumen-card-name {
+  font-size: clamp(12px, 1.5vw, 14px);
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resumen-card-version {
+  font-size: clamp(10px, 1.2vw, 12px);
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resumen-card-no-image .resumen-card-name,
+.resumen-card-no-image .resumen-card-version {
+  color: #2d3748;
+  text-shadow: none;
+}
+
+.resumen-tr {
+  grid-column: 2;
+  grid-row: 1;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.resumen-section-title {
+  font-size: clamp(10px, 1.4vw, 12px);
+  margin: 0 0 4px 0;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+/* Zonas Team Skill / Pasiva / Latentes: tarjetas con fondo pastel por tipo (sin títulos de texto) */
+.resumen-skills-zones {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resumen-skill-zone {
+  flex-shrink: 0;
+}
+
+.resumen-skill-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.resumen-skill-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.5rem;
+}
+
+.resumen-skill-card {
+  position: relative;
+  border-radius: 10px;
+  padding: 0.35rem 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.resumen-skill-card-active-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 1rem;
+  color: #16a34a;
+  opacity: 0.95;
+}
+
+/* Team Skill: verde pastel */
+.resumen-skill-card-team {
+  background: #dcfce7;
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+/* Pasiva: violeta pastel */
+.resumen-skill-card-pasiva {
+  background: #f3e8ff;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* Latentes: azul pastel */
+.resumen-skill-card-latente {
+  background: #dbeafe;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.resumen-skill-card-name {
+  font-size: clamp(12px, 1.2vw, 13px);
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 0.2rem 0;
+  line-height: 1.2;
+}
+
+.resumen-skill-card-effect {
+  font-size: clamp(12px, 1vw, 13px);
+  color: #64748b;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.resumen-bottom {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.resumen-bl,
+.resumen-br {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.resumen-bl .resumen-section-title,
+.resumen-br .resumen-section-title {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+/* Técnicas con mismo aspecto que la pestaña Estadísticas: tarjetas con icono, nombre y stats con etiquetas */
+.resumen-techniques-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.resumen-technique-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.2rem 0.4rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.resumen-technique-card.main {
+  border-color: #f39c12;
+  background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.resumen-tech-single-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 32px;
+}
+
+.resumen-tech-thumb {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.resumen-tech-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.resumen-tech-name-section {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.resumen-tech-name-section .resumen-tech-name {
+  font-size: clamp(12px, 1.2vw, 14px);
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resumen-tech-badge {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.resumen-combined-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #667eea;
+}
+
+.resumen-combined-icon .material-icons {
+  font-size: 1.1rem;
+}
+
+.resumen-tech-stats-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.resumen-tech-stat-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.resumen-tech-stat-inline .resumen-tech-label {
+  font-size: clamp(12px, 1vw, 13px);
+  color: #718096;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.resumen-tech-stat-inline .resumen-tech-value {
+  font-size: clamp(12px, 1.1vw, 13px);
+  color: #2d3748;
+  font-weight: 700;
+  text-align: right;
+  min-width: 28px;
+}
+
+.resumen-momentum-value {
+  color: #667eea !important;
+}
+
+.resumen-footer {
+  flex-shrink: 0;
+  font-size: clamp(8px, 1.1vw, 10px);
+  color: #64748b;
+  margin-left: 308px;
+  padding: 4px 0 0 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.resumen-actions {
+  flex-shrink: 0;
+  padding: 4px 8px 6px 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.resumen-back-btn,
+.resumen-download-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.resumen-back-btn {
+  background: #e2e8f0;
+}
+.resumen-back-btn:hover {
+  background: #cbd5e1;
+}
+
+.resumen-download-btn {
+  background: #667eea;
+  color: white;
+}
+.resumen-download-btn:hover {
+  background: #5a67d8;
+}
+
+.resumen-loading,
+.resumen-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.resumen-error p {
+  margin-bottom: 12px;
+}

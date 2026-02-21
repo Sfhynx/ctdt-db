@@ -1,0 +1,79 @@
+<div class="ranking-container">
+    <div class="controls-section">
+        <div class="type-selector">
+            <div class="type-option"
+                 *ngFor="let type of techniqueTypes"
+                 [class.active]="selectedType === type.key"
+                 (click)="selectType(type.key)"
+                 [title]="type.name">
+                <img [src]="getTypeIconUrl(type.key)" [alt]="type.name" class="type-icon">
+                <span class="type-label">{{ type.name }}</span>
+            </div>
+        </div>
+
+        <div class="bonus-controls">
+            <div class="bonus-control">
+                <label for="teamSkill">Team Skill (%):</label>
+                <input type="number" id="teamSkill" [(ngModel)]="teamSkillBonus"
+                       (ngModelChange)="onBonusChange()" min="0" max="100" step="0.1">
+            </div>
+            <div class="bonus-control">
+                <label for="bond">Bond (%):</label>
+                <input type="number" id="bond" [(ngModel)]="bondBonus"
+                       (ngModelChange)="onBonusChange()" min="0" max="100" step="0.1">
+            </div>
+            <div class="bonus-control">
+                <label for="formation">Formación:</label>
+                <select id="formation" [(ngModel)]="formationId" (ngModelChange)="onBonusChange()">
+                    <option *ngFor="let f of formations" [value]="f.id">{{ getFormationLabel(f) }}</option>
+                </select>
+            </div>
+            <div class="bonus-control">
+                <button type="button" class="reset-button" (click)="resetBonuses()" title="Resetear bonos" aria-label="Resetear bonos">↻</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" *ngIf="loading">
+        <p>Cargando ranking...</p>
+    </div>
+
+    <div class="error" *ngIf="error && !loading">
+        <p>{{ error }}</p>
+    </div>
+
+    <div class="ranking-content" *ngIf="!loading && !error">
+        <div class="ranking-list" *ngIf="filteredRankings.length > 0">
+            <div class="ranking-item"
+                 *ngFor="let ranking of filteredRankings; let i = index"
+                 [class.top-three]="i < 3">
+                <div class="rank-number">{{ i + 1 }}</div>
+                <div class="player-image">
+                    <img [src]="getPlayerImageUrl(ranking.player)"
+                         [alt]="ranking.player.name"
+                         (error)="onImageError($event)">
+                </div>
+                <div class="player-info">
+                    <div class="player-name">{{ ranking.player.name }}</div>
+                    <div class="player-version">{{ ranking.player.version }}</div>
+                </div>
+                <div class="technique-info">
+                    <div class="technique-header">
+                        <img [src]="getTechImageUrl(ranking.technique)"
+                             [alt]="ranking.technique.type"
+                             class="technique-icon">
+                        <span class="technique-name">{{ ranking.technique.name }}</span>
+                    </div>
+                    <div class="technique-type">{{ ranking.technique.type }}</div>
+                </div>
+                <div class="momentum-value">
+                    <span class="momentum-label">Momentum:</span>
+                    <span class="momentum-number">{{ ranking.momentum }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="no-results" *ngIf="filteredRankings.length === 0">
+            <p>No hay técnicas disponibles para el tipo seleccionado.</p>
+        </div>
+    </div>
+</div>

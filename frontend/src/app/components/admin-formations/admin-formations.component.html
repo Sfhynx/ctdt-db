@@ -1,0 +1,89 @@
+<div class="form-container">
+  <header class="form-header">
+    <h1>Formaciones</h1>
+    <p class="form-desc">Crea formaciones con bono a Ataque, Defensa o Físico y opcionalmente un bono extra a una stat (ej. Potencia +8%). El bono extra se aplica en el mismo paso que el bono de formación.</p>
+  </header>
+
+  <div class="form-card">
+    <h2 class="form-card-title">
+      <span class="material-icons">map</span>
+      Formaciones predefinidas
+    </h2>
+    <ul class="form-list">
+      <li class="form-list-item read-only" *ngFor="let f of formations" [class.custom]="!f.builtIn">
+        <span class="form-list-label">{{ getFormationLabel(f) }}</span>
+        <span class="form-list-badge" *ngIf="f.builtIn">Por defecto</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="form-card">
+    <h2 class="form-card-title">
+      <span class="material-icons">add_circle</span>
+      Formaciones personalizadas
+    </h2>
+    <div class="form-actions-top">
+      <button type="button" class="form-btn primary" (click)="startNew()">
+        <span class="material-icons">add</span>
+        Nueva formación
+      </button>
+      <span class="form-saved" *ngIf="saved">
+        <span class="material-icons">done_all</span> Guardado
+      </span>
+    </div>
+
+    <div class="form-edit" *ngIf="showForm()">
+      <div class="form-edit-fields">
+        <div class="form-field">
+          <label for="form-name">Nombre</label>
+          <input type="text" id="form-name" [(ngModel)]="formName" class="form-input" placeholder="Ej. Ataque con Potencia">
+        </div>
+        <div class="form-field">
+          <label for="form-category">Categoría (bono)</label>
+          <select id="form-category" [(ngModel)]="formCategory" class="form-select">
+            <option *ngFor="let o of categoryOptions" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+        <div class="form-field" *ngIf="formCategory !== 'Ninguna'">
+          <label for="form-catBonus">% bono categoría</label>
+          <input type="number" id="form-catBonus" [(ngModel)]="formCategoryBonus" min="0" max="100" class="form-input">
+        </div>
+        <div class="form-field">
+          <label for="form-extraStat">Bono extra (stat opcional)</label>
+          <select id="form-extraStat" [(ngModel)]="formExtraStat" class="form-select">
+            <option value="">Ninguno</option>
+            <option *ngFor="let k of statKeys" [value]="k">{{ statLabels[k] }}</option>
+          </select>
+        </div>
+        <div class="form-field" *ngIf="formExtraStat">
+          <label for="form-extraPct">% bono extra</label>
+          <input type="number" id="form-extraPct" [(ngModel)]="formExtraPercent" min="0" max="100" class="form-input">
+        </div>
+      </div>
+      <div class="form-edit-actions">
+        <button type="button" class="form-btn" (click)="cancelEdit()">Cancelar</button>
+        <button type="button" class="form-btn primary" (click)="saveFormation()">Guardar</button>
+      </div>
+    </div>
+
+    <ul class="form-list" *ngIf="customFormations.length">
+      <li class="form-list-item" *ngFor="let f of customFormations">
+        <span class="form-list-label">{{ getFormationLabel(f) }}</span>
+        <div class="form-list-actions">
+          <button type="button" class="form-btn icon" (click)="editFormation(f)" title="Editar">
+            <span class="material-icons">edit</span>
+          </button>
+          <button type="button" class="form-btn icon danger" (click)="deleteFormation(f)" title="Eliminar">
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
+      </li>
+    </ul>
+    <p class="form-empty" *ngIf="!customFormations.length && !showForm()">Aún no hay formaciones personalizadas. Crea una con «Nueva formación».</p>
+  </div>
+
+  <a routerLink="/admin" class="form-back">
+    <span class="material-icons">arrow_back</span>
+    Volver al panel de administración
+  </a>
+</div>

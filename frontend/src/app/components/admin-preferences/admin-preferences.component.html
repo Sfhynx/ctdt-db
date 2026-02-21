@@ -1,0 +1,90 @@
+<div class="prefs-container">
+  <header class="prefs-header">
+    <h1>Preferencias por defecto</h1>
+    <p class="prefs-desc">Estos valores se aplicarán al entrar en el detalle de un jugador.</p>
+  </header>
+
+  <div class="prefs-card">
+    <div class="prefs-grid">
+      <div class="prefs-field">
+        <div class="prefs-field-icon" aria-hidden="true">
+          <span class="material-icons">groups</span>
+        </div>
+        <label for="pref-teamSkill">Team Skill %</label>
+        <input type="number" id="pref-teamSkill" [(ngModel)]="teamSkillBonus" min="0" max="100" class="prefs-input" placeholder="0">
+      </div>
+      <div class="prefs-field">
+        <div class="prefs-field-icon" aria-hidden="true">
+          <span class="material-icons">favorite</span>
+        </div>
+        <label for="pref-bond">Bond %</label>
+        <input type="number" id="pref-bond" [(ngModel)]="bondBonus" min="0" max="100" class="prefs-input" placeholder="0">
+      </div>
+      <div class="prefs-field">
+        <div class="prefs-field-icon" aria-hidden="true">
+          <span class="material-icons">bolt</span>
+        </div>
+        <label>Rompebarreras</label>
+        <div class="prefs-rb-buttons">
+          <button *ngFor="let level of rompebarrerasLevels" type="button" class="prefs-rb-btn"
+            [class.active]="rompebarrerasLevel === level" (click)="rompebarrerasLevel = level">
+            {{ level }}
+          </button>
+        </div>
+      </div>
+      <div class="prefs-field prefs-field-formation">
+        <div class="prefs-field-icon" aria-hidden="true">
+          <span class="material-icons">map</span>
+        </div>
+        <label for="pref-formation">Formación</label>
+        <select id="pref-formation" [(ngModel)]="formationId" class="prefs-select">
+          <option *ngFor="let f of formations" [value]="f.id">{{ getFormationLabel(f) }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="prefs-actions">
+      <button type="button" class="prefs-save-btn" (click)="save()">
+        <span class="material-icons">check_circle</span>
+        Guardar preferencias
+      </button>
+      <span class="prefs-saved-msg" *ngIf="saved">
+        <span class="material-icons">done_all</span> Guardado
+      </span>
+    </div>
+  </div>
+
+  <div class="prefs-card prefs-card-limitbreaks">
+    <h2 class="prefs-card-title">
+      <span class="material-icons">add_circle</span>
+      Limit breaks por posición
+    </h2>
+    <p class="prefs-card-desc">Marca los +1000 que quieras aplicar por defecto según el código de posición del jugador (PO: 5, DL/MCA/MCD/DF: 8).</p>
+    <div class="prefs-lb-list">
+      <div class="prefs-lb-group" *ngFor="let positionCode of positionCodes">
+        <div class="prefs-lb-group-head">
+          <h3 class="prefs-lb-group-title">{{ positionCodeLabels[positionCode] }}</h3>
+          <span class="prefs-lb-count">{{ limitBreaksByPositionGroup[positionCode].length }} / {{ getMaxForGroup(positionCode) }}</span>
+        </div>
+        <div class="prefs-lb-rows">
+          <div class="prefs-lb-row" *ngFor="let group of getStatGroups(positionCode)">
+            <span class="prefs-lb-row-title">{{ group.title }}</span>
+            <div class="prefs-lb-checks">
+              <label class="prefs-lb-check" *ngFor="let statKey of group.stats"
+                [class.disabled]="!isLimitBreakSelected(positionCode, statKey) && limitBreaksByPositionGroup[positionCode].length >= getMaxForGroup(positionCode)">
+                <input type="checkbox" [checked]="isLimitBreakSelected(positionCode, statKey)"
+                  (change)="toggleLimitBreak(positionCode, statKey)">
+                <span class="prefs-lb-check-label">{{ statLabels[statKey] }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a routerLink="/admin" class="prefs-back">
+    <span class="material-icons">arrow_back</span>
+    Volver al panel de administración
+  </a>
+</div>

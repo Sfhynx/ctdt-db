@@ -1,0 +1,877 @@
+<div class="detail-container">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando jugador...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="error">
+        <span class="material-icons error-icon">warning</span>
+        <p>{{ error }}</p>
+        <button class="back-btn" (click)="goBack()">Volver a la lista</button>
+    </div>
+
+    <!-- Player Detail -->
+    <div *ngIf="!loading && !error && player" class="player-detail">
+
+        <!-- Main Content Layout with Player Info Column -->
+        <div class="main-layout">
+            <!-- Player Info Column (Left) -->
+            <div class="player-info-column">
+                <div class="player-image-wrapper" *ngIf="player.cardImageUrl"
+                     [style.background-image]="'url(' + getImageUrl(player) + ')'"
+                     [style.border-color]="getElementColor(player.element?.name ?? '')"
+                     [attr.aria-label]="player.name">
+                </div>
+                <div class="player-info-content">
+                    <div class="title-section">
+                        <div class="title-row">
+                            <div class="name-with-flag">
+                                <h1>{{ player.name }}</h1>
+                                <span class="country-flag" [attr.title]="player.country?.name ?? ''">{{ getCountryFlag(player.country?.name ?? '') }}</span>
+                            </div>
+                            <button class="edit-icon-btn" (click)="editPlayer()" title="Editar jugador">
+                                <span class="material-icons">edit</span>
+                            </button>
+                            <button class="edit-icon-btn" (click)="goToResumen()" title="Ver resumen para captura">
+                                <span class="material-icons">summarize</span>
+                            </button>
+                        </div>
+                        <p class="player-version">{{ player.version }}</p>
+                        <div class="badge-row">
+                            <span class="rarity-badge">{{ player.rarity?.name ?? '' }}</span>
+                            <span class="position-badge">
+                                {{ getPositionsDisplay(player.positions) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="info-compact">
+                        <div class="info-item"><strong>Equipo:</strong> {{ player.team?.name ?? '' }}</div>
+                        <div class="info-item"><strong>Serie:</strong> {{ player.series?.name ?? '' }}</div>
+                    </div>
+
+                    <!-- Ball Skills -->
+                    <div class="ball-skills-section">
+                        <div class="ball-skill-info" [class.selectable]="isGoalkeeper()"
+                             [class.selected]="isGoalkeeper() && ballBonusType === 'low'"
+                             (click)="setBallBonus('low')">
+                            <div class="ball-skill-label-compact"><strong>Balón Bajo:</strong></div>
+                            <div class="ball-skill-value-compact"
+                                [class.good]="player.groundBallSkill === 'Bueno'"
+                                [class.very-good]="player.groundBallSkill === 'Muy Bueno'">
+                                {{ player.groundBallSkill }}
+                            </div>
+                        </div>
+                        <div class="ball-skill-info" [class.selectable]="isGoalkeeper()"
+                             [class.selected]="isGoalkeeper() && ballBonusType === 'high'"
+                             (click)="setBallBonus('high')">
+                            <div class="ball-skill-label-compact"><strong>Balón Alto:</strong></div>
+                            <div class="ball-skill-value-compact"
+                                [class.good]="player.highBallSkill === 'Bueno'"
+                                [class.very-good]="player.highBallSkill === 'Muy Bueno'">
+                                {{ player.highBallSkill }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Content Area with Skills and Stats -->
+            <div class="content-area">
+                <!-- Inner Layout: Skills Sidebar + Tab Content -->
+                <div class="inner-layout" [class.sidebar-collapsed]="skillsSidebarCollapsed">
+                    <!-- Skills Sidebar (Collapsible) -->
+                    <div class="skills-sidebar" [class.collapsed]="skillsSidebarCollapsed">
+                        <button class="collapse-toggle-btn" (click)="toggleSkillsSidebar()" [title]="skillsSidebarCollapsed ? 'Expandir habilidades' : 'Colapsar habilidades'">
+                            <span class="material-icons">{{ skillsSidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</span>
+                        </button>
+                        <div class="skills-content" *ngIf="!skillsSidebarCollapsed">
+                <div class="skill-card" *ngIf="player.teamSkill">
+                    <h3><span class="material-icons">groups</span> Team Skill</h3>
+                    <h4>{{ player.teamSkill.name }}</h4>
+                    <p class="skill-effect">{{ player.teamSkill.effect }}</p>
+                </div>
+
+                <div class="skill-card clickable" *ngIf="player.passiveSkill" [class.active]="passiveSkillActive"
+                    (click)="togglePassiveSkill()">
+                    <h3><span class="material-icons">star</span> Pasiva</h3>
+                    <h4>{{ player.passiveSkill.name }}</h4>
+                    <p class="skill-effect">{{ player.passiveSkill.effect }}</p>
+                </div>
+
+                <div class="skill-card" *ngIf="player.latentSkills && player.latentSkills.length > 0">
+                    <h3><span class="material-icons">auto_awesome</span> Latentes</h3>
+                    <div *ngFor="let skill of player.latentSkills" class="latent-item clickable"
+                        [class.active]="isLatentSkillActive(skill.id)" (click)="toggleLatentSkill(skill.id)">
+                        <div class="latent-header">
+                            <h4>{{ skill.name }}</h4>
+                        </div>
+                        <p class="skill-effect">{{ skill.effect }}</p>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content Area -->
+                    <div class="tab-content-area">
+                        <!-- Tabs -->
+                        <div class="tabs">
+                            <button class="tab-btn" [class.active]="activeTab === 'stats'" (click)="setActiveTab('stats')">
+                                <span class="material-icons">bar_chart</span> Estadísticas
+                            </button>
+                            <button class="tab-btn" [class.active]="activeTab === 'techniques'" (click)="setActiveTab('techniques')">
+                                <span class="material-icons">bolt</span> Técnicas
+                            </button>
+                            <button class="tab-btn" [class.active]="activeTab === 'compare'" (click)="setActiveTab('compare')"
+                                    *ngIf="player">
+                                <span class="material-icons">compare_arrows</span> Comparativa
+                            </button>
+                        </div>
+
+                        <!-- Global Controls (Visible in all tabs) -->
+                        <div class="global-controls">
+                            <div class="control-group">
+                                <span class="control-label">Rompebarreras:</span>
+                                <div class="rb-buttons">
+                                    <button *ngFor="let level of [0, 1, 2, 3, 4]" class="rb-btn"
+                                        [class.active]="rompebarrerasLevel === level" (click)="setRompebarrerasLevel(level)">
+                                        {{ level }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="teamSkillGlobal">Team Skills %:</label>
+                                <input type="number" id="teamSkillGlobal" [(ngModel)]="teamSkillBonus" class="control-input"
+                                    placeholder="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="bondGlobal">Bond %:</label>
+                                <input type="number" id="bondGlobal" [(ngModel)]="bondBonus" class="control-input" placeholder="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="formationGlobal">Formación:</label>
+                                <select id="formationGlobal" [(ngModel)]="formationId" class="control-select">
+                                    <option *ngFor="let f of formations" [value]="f.id">{{ getFormationLabel(f) }}</option>
+                                </select>
+                            </div>
+                            <button class="reset-btn-global" (click)="resetModifiers()" title="Resetear todo" aria-label="Resetear todo">↻</button>
+                        </div>
+
+                        <!-- Stats Tab -->
+                        <div *ngIf="activeTab === 'stats'" class="tab-content">
+                    <div class="stats-calculator">
+                        <!-- Stats Sub-Tabs -->
+                        <div class="stats-sub-tabs">
+                            <button class="sub-tab-btn" [class.active]="statsSubTab === 'base'"
+                                (click)="setStatsSubTab('base')">
+                                Stats Base
+                            </button>
+                            <button class="sub-tab-btn" [class.active]="statsSubTab === 'ingame'"
+                                (click)="setStatsSubTab('ingame')">
+                                Stats In-Game
+                            </button>
+                        </div>
+
+                        <!-- Selection Counter -->
+                        <div class="selection-counter" *ngIf="selectedStats.size > 0">
+                            <span class="counter-icon">✓</span>
+                            <span class="counter-text">{{ selectedStats.size }}/{{ getMaxSelectedStats() }} stats
+                                seleccionadas (+1000 cada una)</span>
+                        </div>
+
+                        <!-- Base Stats Table -->
+                        <div *ngIf="statsSubTab === 'base'" class="stats-table-container">
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Estadística</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Energy -->
+                                    <tr>
+                                        <td class="stat-name">Energía</td>
+                                        <td class="value-cell">
+                                            <span class="modified-value" *ngIf="getRompebarrerasEnergyBonus() > 0">
+                                                {{ getModifiedEnergy() }}
+                                            </span>
+                                            <span class="original-value" *ngIf="getRompebarrerasEnergyBonus() === 0">
+                                                {{ player.stats.energy }}
+                                            </span>
+                                            <span class="original-small" *ngIf="getRompebarrerasEnergyBonus() > 0">
+                                                ({{ player.stats.energy }})
+                                            </span>
+                                        </td>
+                                    </tr>
+
+
+                                    <!-- Attack & Defense Stats - Solo jugadores de campo -->
+                                    <ng-container *ngIf="!isGoalkeeper()">
+                                        <!-- Attack Stats -->
+                                        <tr class="category-row">
+                                            <td class="category-header">ATAQUE</td>
+                                            <td class="category-total">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedAttack() !== player.stats.attack">
+                                                    {{ getModifiedAttack() }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedAttack() === player.stats.attack">
+                                                    {{ player.stats.attack }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedAttack() !== player.stats.attack">
+                                                    ({{ player.stats.attack }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('dribble')"
+                                            [class.disabled]="!isStatSelected('dribble') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('dribble')">
+                                            <td class="stat-name">Regate</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.dribble ?? 0, 'dribble') !== player.stats.dribble">
+                                                    {{ getModifiedStat(player.stats.dribble ?? 0, 'dribble') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.dribble ?? 0, 'dribble') === player.stats.dribble">
+                                                    {{ player.stats.dribble }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.dribble ?? 0, 'dribble') !== player.stats.dribble">
+                                                    ({{ player.stats.dribble }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('shot')"
+                                            [class.disabled]="!isStatSelected('shot') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('shot')">
+                                            <td class="stat-name">Tiro</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.shot ?? 0, 'shot') !== player.stats.shot">
+                                                    {{ getModifiedStat(player.stats.shot ?? 0, 'shot') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.shot ?? 0, 'shot') === player.stats.shot">
+                                                    {{ player.stats.shot }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.shot ?? 0, 'shot') !== player.stats.shot">
+                                                    ({{ player.stats.shot }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('pass')"
+                                            [class.disabled]="!isStatSelected('pass') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('pass')">
+                                            <td class="stat-name">Pase</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.pass ?? 0, 'pass') !== player.stats.pass">
+                                                    {{ getModifiedStat(player.stats.pass ?? 0, 'pass') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.pass ?? 0, 'pass') === player.stats.pass">
+                                                    {{ player.stats.pass }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.pass ?? 0, 'pass') !== player.stats.pass">
+                                                    ({{ player.stats.pass }})
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        <tr class="category-row">
+                                            <td class="category-header">DEFENSA</td>
+                                            <td class="category-total">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedDefense() !== player.stats.defense">
+                                                    {{ getModifiedDefense() }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedDefense() === player.stats.defense">
+                                                    {{ player.stats.defense }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedDefense() !== player.stats.defense">
+                                                    ({{ player.stats.defense }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('tackle')"
+                                            [class.disabled]="!isStatSelected('tackle') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('tackle')">
+                                            <td class="stat-name">Entrada</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.tackle ?? 0, 'tackle') !== player.stats.tackle">
+                                                    {{ getModifiedStat(player.stats.tackle ?? 0, 'tackle') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.tackle ?? 0, 'tackle') === player.stats.tackle">
+                                                    {{ player.stats.tackle }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.tackle ?? 0, 'tackle') !== player.stats.tackle">
+                                                    ({{ player.stats.tackle }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('block')"
+                                            [class.disabled]="!isStatSelected('block') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('block')">
+                                            <td class="stat-name">Bloqueo</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.block ?? 0, 'block') !== player.stats.block">
+                                                    {{ getModifiedStat(player.stats.block ?? 0, 'block') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.block ?? 0, 'block') === player.stats.block">
+                                                    {{ player.stats.block }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.block ?? 0, 'block') !== player.stats.block">
+                                                    ({{ player.stats.block }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('intercept')"
+                                            [class.disabled]="!isStatSelected('intercept') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('intercept')">
+                                            <td class="stat-name">Intercepción</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.intercept ?? 0, 'intercept') !== player.stats.intercept">
+                                                    {{ getModifiedStat(player.stats.intercept ?? 0, 'intercept') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.intercept ?? 0, 'intercept') === player.stats.intercept">
+                                                    {{ player.stats.intercept }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.intercept ?? 0, 'intercept') !== player.stats.intercept">
+                                                    ({{ player.stats.intercept }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </ng-container>
+
+                                    <!-- Goalkeeper Stats - Solo porteros -->
+                                    <ng-container *ngIf="isGoalkeeper()">
+                                        <tr class="category-row">
+                                            <td class="category-header">PARADA</td>
+                                            <td class="category-total">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') + getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') !== (player.stats.punch ?? 0) + (player.stats.catchStat ?? 0)">
+                                                    {{ getModifiedStat(player.stats.punch ?? 0, 'punch') +
+                                                    getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') + getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') === (player.stats.punch ?? 0) + (player.stats.catchStat ?? 0)">
+                                                    {{ (player.stats.punch ?? 0) + (player.stats.catchStat ?? 0) }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') + getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') !== (player.stats.punch ?? 0) + (player.stats.catchStat ?? 0)">
+                                                    ({{ (player.stats.punch ?? 0) + (player.stats.catchStat ?? 0) }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('punch')"
+                                            [class.disabled]="!isStatSelected('punch') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('punch')">
+                                            <td class="stat-name">Puño</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') !== player.stats.punch">
+                                                    {{ getModifiedStat(player.stats.punch ?? 0, 'punch') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') === player.stats.punch">
+                                                    {{ player.stats.punch }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.punch ?? 0, 'punch') !== player.stats.punch">
+                                                    ({{ player.stats.punch }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="stat-row-selectable" [class.selected]="isStatSelected('catchStat')"
+                                            [class.disabled]="!isStatSelected('catchStat') && !canSelectMoreStats()"
+                                            (click)="toggleStatSelection('catchStat')">
+                                            <td class="stat-name">Blocaje</td>
+                                            <td class="value-cell">
+                                                <span class="modified-value"
+                                                    *ngIf="getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') !== player.stats.catchStat">
+                                                    {{ getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') }}
+                                                </span>
+                                                <span class="original-value"
+                                                    *ngIf="getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') === player.stats.catchStat">
+                                                    {{ player.stats.catchStat }}
+                                                </span>
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStat(player.stats.catchStat ?? 0, 'catchStat') !== player.stats.catchStat">
+                                                    ({{ player.stats.catchStat }})
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </ng-container>
+
+                                    <!-- Physical Stats -->
+                                    <tr class="category-row">
+                                        <td class="category-header">FÍSICO</td>
+                                        <td class="category-total">
+                                            <span class="modified-value"
+                                                *ngIf="getModifiedPhysical() !== player.stats.physical">
+                                                {{ getModifiedPhysical() }}
+                                            </span>
+                                            <span class="original-value"
+                                                *ngIf="getModifiedPhysical() === player.stats.physical">
+                                                {{ player.stats.physical }}
+                                            </span>
+                                            <span class="original-small"
+                                                *ngIf="getModifiedPhysical() !== player.stats.physical">
+                                                ({{ player.stats.physical }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="stat-row-selectable" [class.selected]="isStatSelected('speed')"
+                                        [class.disabled]="!isStatSelected('speed') && !canSelectMoreStats()"
+                                        (click)="toggleStatSelection('speed')">
+                                        <td class="stat-name">Velocidad</td>
+                                        <td class="value-cell">
+                                            <span class="modified-value"
+                                                *ngIf="getModifiedStat(player.stats.speed, 'speed') !== player.stats.speed">
+                                                {{ getModifiedStat(player.stats.speed, 'speed') }}
+                                            </span>
+                                            <span class="original-value"
+                                                *ngIf="getModifiedStat(player.stats.speed, 'speed') === player.stats.speed">
+                                                {{ player.stats.speed }}
+                                            </span>
+                                            <span class="original-small"
+                                                *ngIf="getModifiedStat(player.stats.speed, 'speed') !== player.stats.speed">
+                                                ({{ player.stats.speed }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="stat-row-selectable" [class.selected]="isStatSelected('power')"
+                                        [class.disabled]="!isStatSelected('power') && !canSelectMoreStats()"
+                                        (click)="toggleStatSelection('power')">
+                                        <td class="stat-name">Potencia</td>
+                                        <td class="value-cell">
+                                            <span class="modified-value"
+                                                *ngIf="getModifiedStat(player.stats.power, 'power') !== player.stats.power">
+                                                {{ getModifiedStat(player.stats.power, 'power') }}
+                                            </span>
+                                            <span class="original-value"
+                                                *ngIf="getModifiedStat(player.stats.power, 'power') === player.stats.power">
+                                                {{ player.stats.power }}
+                                            </span>
+                                            <span class="original-small"
+                                                *ngIf="getModifiedStat(player.stats.power, 'power') !== player.stats.power">
+                                                ({{ player.stats.power }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr class="stat-row-selectable" [class.selected]="isStatSelected('technique')"
+                                        [class.disabled]="!isStatSelected('technique') && !canSelectMoreStats()"
+                                        (click)="toggleStatSelection('technique')">
+                                        <td class="stat-name">Técnica</td>
+                                        <td class="value-cell">
+                                            <span class="modified-value"
+                                                *ngIf="getModifiedStat(player.stats.technique, 'technique') !== player.stats.technique">
+                                                {{ getModifiedStat(player.stats.technique, 'technique') }}
+                                            </span>
+                                            <span class="original-value"
+                                                *ngIf="getModifiedStat(player.stats.technique, 'technique') === player.stats.technique">
+                                                {{ player.stats.technique }}
+                                            </span>
+                                            <span class="original-small"
+                                                *ngIf="getModifiedStat(player.stats.technique, 'technique') !== player.stats.technique">
+                                                ({{ player.stats.technique }})
+                                            </span>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Grand Total -->
+                                    <tr class="grand-total-row">
+                                        <td class="stat-name"><strong>TOTAL GENERAL</strong></td>
+                                        <td class="value-cell">
+                                            <span class="modified-value"
+                                                *ngIf="(getModifiedAttack() + getModifiedDefense() + getModifiedPhysical()) !== player.stats.total">
+                                                {{ getModifiedAttack() + getModifiedDefense() + getModifiedPhysical() }}
+                                            </span>
+                                            <span class="original-value"
+                                                *ngIf="(getModifiedAttack() + getModifiedDefense() + getModifiedPhysical()) === player.stats.total">
+                                                {{ player.stats.total }}
+                                            </span>
+                                            <span class="original-small"
+                                                *ngIf="(getModifiedAttack() + getModifiedDefense() + getModifiedPhysical()) !== player.stats.total">
+                                                ({{ player.stats.total }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- In-Game Stats Table -->
+                        <div *ngIf="statsSubTab === 'ingame'" class="stats-table-container">
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Estadística In-Game</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Field Player In-Game Stats -->
+                                    <ng-container *ngIf="!isGoalkeeper()">
+                                        <tr>
+                                            <td class="stat-name">Regate</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('dribble') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Remate</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('shot') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Volea</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameVolley() }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Cabezazo</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameHeader() }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Pase</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('pass') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Entrada</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('tackle') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Bloqueo</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('block') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Intercepción</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameStat('intercept') }}
+                                            </td>
+                                        </tr>
+                                    </ng-container>
+
+                                    <!-- Goalkeeper In-Game Stats -->
+                                    <ng-container *ngIf="isGoalkeeper()">
+                                        <tr>
+                                            <td class="stat-name">Puño</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGamePunchBase() }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Puño (Balón Bajo)</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGamePunch('low') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Puño (Balón Alto)</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGamePunch('high') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Blocaje</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameCatchBase() }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Blocaje (Balón Bajo)</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameCatch('low') }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="stat-name">Blocaje (Balón Alto)</td>
+                                            <td class="value-cell ingame-value">
+                                                {{ getInGameCatch('high') }}
+                                            </td>
+                                        </tr>
+                                    </ng-container>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Techniques Tab -->
+                <div *ngIf="activeTab === 'techniques'" class="tab-content">
+                    <!-- Techniques Sub-Tabs -->
+                    <div class="techniques-sub-tabs">
+                        <button class="sub-tab-btn" [class.active]="techniquesTab === 'player'"
+                            (click)="setTechniquesTab('player')">
+                            Técnicas del Jugador
+                        </button>
+                        <button class="sub-tab-btn" [class.active]="techniquesTab === 'best'"
+                            (click)="setTechniquesTab('best')">
+                            Mejores Técnicas
+                        </button>
+                        <button class="sub-tab-btn" [class.active]="techniquesTab === 'all'"
+                            (click)="setTechniquesTab('all')">
+                            Todas las Técnicas
+                        </button>
+                    </div>
+
+                    <div class="techniques-grid">
+                        <div *ngFor="let tech of getDisplayedTechniques()" class="technique-card-wrapper">
+                            <div class="technique-card" [class.main]="tech.isMain">
+                                <div class="tech-single-line">
+                                    <div class="thumb-wrapper" *ngIf="player.cardImageUrl">
+                                      <img [src]="getTechImageUrl(tech)" [alt]="tech.type" loading="lazy">
+                                    </div>
+                                    <div class="tech-name-section">
+                                        <h3>{{ tech.name }}</h3>
+                                        <span class="tech-badge" *ngIf="tech.isMain">Principal</span>
+                                    </div>
+                                    <div class="tech-stats-section">
+                                        <div class="tech-stat-inline" *ngIf="tech.isCombined">
+                                            <span class="material-icons combined-icon" title="Técnica Combinada">groups</span>
+                                        </div>
+                                        <div class="tech-stat-inline">
+                                            <span class="label">Poder:</span>
+                                            <span class="value"
+                                                [class.modified]="getModifiedTechniquePower(tech.power, tech) !== tech.power">
+                                                {{ getModifiedTechniquePower(tech.power, tech) }}
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedTechniquePower(tech.power, tech) !== tech.power">
+                                                    ({{ tech.power }})
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="tech-stat-inline">
+                                            <span class="label">Stamina:</span>
+                                            <span class="value"
+                                                [class.modified]="getModifiedStaminaCost(tech.staminaCost) !== tech.staminaCost">
+                                                {{ getModifiedStaminaCost(tech.staminaCost) }}
+                                                <span class="original-small"
+                                                    *ngIf="getModifiedStaminaCost(tech.staminaCost) !== tech.staminaCost">
+                                                    ({{ tech.staminaCost }})
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="tech-stat-inline">
+                                            <span class="label">Momentum:</span>
+                                            <span class="value momentum-value">{{ getTechniqueMomentum(tech) }}</span>
+                                        </div>
+                                        <div class="tech-stat-inline">
+                                            <span class="label">Ejecuciones:</span>
+                                            <span class="value executions-value">{{
+                                                getTechniqueExecutions(tech.staminaCost)
+                                                }}x</span>
+                                        </div>
+                                    </div>
+                                    <!-- Info icon aligned to the right -->
+                                    <div class="tech-info-icon" *ngIf="(techniquesTab === 'best' || techniquesTab === 'all') && !isPlayerTechnique(tech)"
+                                        (click)="toggleTooltip(tech)" [class.active]="tooltipTechnique?.id === tech.id">
+                                        <span class="material-icons">{{ tooltipTechnique?.id === tech.id ? 'expand_less'
+                                            :
+                                            'expand_more' }}</span>
+                                    </div>
+                                    <!-- Placeholder for alignment when showing best/all techniques -->
+                                    <div class="tech-info-placeholder"
+                                        *ngIf="(techniquesTab === 'best' || techniquesTab === 'all') && isPlayerTechnique(tech)">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Expandable info panel -->
+                            <div class="tech-info-panel" *ngIf="tooltipTechnique?.id === tech.id">
+                                <div class="info-panel-content">
+                                    <div class="info-panel-header">
+                                        <span class="material-icons">info</span>
+                                        <strong>Jugadores con esta técnica</strong>
+                                    </div>
+                                    <div class="info-panel-body" *ngIf="getTechniqueOwners(tech).length > 0">
+                                        <table class="owners-table">
+                                            <tbody>
+                                                <tr *ngFor="let owner of getTechniqueOwners(tech)">
+                                                    <td class="player-name">
+                                                        <span class="element-icon"
+                                                            [style.background]="getElementColor(owner.element?.name ?? '')"
+                                                            [title]="owner.element?.name ?? ''"></span>
+                                                        {{ owner.name }}
+                                                    </td>
+                                                    <td class="player-version">{{ owner.version }}</td>
+                                                    <td class="is-main">
+                                                        <span class="main-badge" *ngIf="isTechniqueMain(owner, tech)">★
+                                                            Principal</span>
+                                                        <span class="not-main"
+                                                            *ngIf="!isTechniqueMain(owner, tech)">-</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="info-panel-loading" *ngIf="getTechniqueOwners(tech).length === 0">
+                                        No se encontraron jugadores con esta técnica
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p *ngIf="getDisplayedTechniques().length === 0" class="no-data">
+                            <span *ngIf="techniquesTab === 'player'">Este jugador no tiene técnicas registradas</span>
+                            <span *ngIf="techniquesTab === 'best'">No hay técnicas disponibles</span>
+                            <span *ngIf="techniquesTab === 'all'">No hay técnicas disponibles</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Compare Tab: jugador actual vs portero -->
+                <div *ngIf="activeTab === 'compare'" class="tab-content compare-tab">
+
+                    <div class="compare-controls">
+                        <div class="compare-block compare-block-with-image">
+                            <div class="compare-block-inner">
+                                <h4>{{ player!.name }}</h4>
+                                <div class="control-row">
+                                    <label for="compareCurrentTS">Team Skill %:</label>
+                                    <input type="number" id="compareCurrentTS" [(ngModel)]="compareCurrentTeamSkill" class="control-input" placeholder="0" min="0" max="100">
+                                </div>
+                                <div class="control-row">
+                                    <label for="compareCurrentBond">Bono %:</label>
+                                    <input type="number" id="compareCurrentBond" [(ngModel)]="compareCurrentBond" class="control-input" placeholder="0" min="0" max="100">
+                                </div>
+                                <div class="control-row">
+                                    <label for="compareCurrentFormation">Formación:</label>
+                                    <select id="compareCurrentFormation" [(ngModel)]="compareCurrentFormationId" class="control-select">
+                                        <option *ngFor="let f of formations" [value]="f.id">{{ getFormationLabel(f) }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="compare-block-image" [style.background-image]="'url(' + getImageUrl(player) + ')'"
+                                [style.border-color]="getElementColor(player!.element?.name ?? '')" *ngIf="player!.cardImageUrl"></div>
+                        </div>
+                        <div class="compare-block compare-block-with-image">
+                            <div class="compare-block-inner">
+                                <h4>{{ getSelectedOpponent() ? getSelectedOpponent()!.name : 'Rival' }}</h4>
+                                <ng-container *ngIf="getSelectedOpponent()">
+                                    <div class="control-row">
+                                        <label for="compareOpponentTS">Team Skill %:</label>
+                                        <input type="number" id="compareOpponentTS" [(ngModel)]="compareOpponentTeamSkill" class="control-input" placeholder="0" min="0" max="100">
+                                    </div>
+                                    <div class="control-row">
+                                        <label for="compareOpponentBond">Bono %:</label>
+                                        <input type="number" id="compareOpponentBond" [(ngModel)]="compareOpponentBond" class="control-input" placeholder="0" min="0" max="100">
+                                    </div>
+                                    <div class="control-row">
+                                        <label for="compareOpponentFormation">Formación:</label>
+                                        <select id="compareOpponentFormation" [(ngModel)]="compareOpponentFormationId" class="control-select">
+                                            <option *ngFor="let f of formations" [value]="f.id">{{ getFormationLabel(f) }}</option>
+                                        </select>
+                                    </div>
+                                </ng-container>
+                                <button *ngIf="!getSelectedOpponent()" type="button" class="compare-gk-select-placeholder" (click)="openCompareOpponentModal()">
+                                    {{ isGoalkeeper() ? 'Selecciona un jugador de campo' : 'Selecciona un rival' }}
+                                </button>
+                            </div>
+                            <div class="compare-block-image compare-block-image-clickable" (click)="openCompareOpponentModal()"
+                                [style.background-image]="getSelectedOpponent() ? 'url(' + getImageUrl(getSelectedOpponent()) + ')' : 'none'"
+                                [style.border-color]="getSelectedOpponent() ? getElementColor(getSelectedOpponent()!.element?.name ?? '') : '#dee2e6'"
+                                [class.placeholder]="!getSelectedOpponent()"></div>
+                        </div>
+                    </div>
+
+                    <!-- Modal selección rival -->
+                    <div *ngIf="showCompareOpponentModal" class="compare-gk-modal-overlay" (click)="closeCompareOpponentModal()">
+                        <div class="compare-gk-modal" (click)="$event.stopPropagation()">
+                            <div class="compare-gk-modal-header">
+                                <h3>{{ isGoalkeeper() ? 'Elige un jugador de campo' : 'Elige un rival' }}</h3>
+                                <button type="button" class="compare-gk-modal-close" (click)="closeCompareOpponentModal()" aria-label="Cerrar">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                            <div class="compare-gk-modal-body">
+                                <div class="compare-gk-grid">
+                                    <button *ngFor="let p of getCompareOpponents()" type="button" class="compare-gk-card"
+                                        [class.selected]="compareOpponentId === p.id"
+                                        (click)="selectCompareOpponent(p)">
+                                        <div class="compare-gk-card-image" [style.background-image]="'url(' + getImageUrl(p) + ')'"
+                                            [style.border-color]="getElementColor(p.element?.name ?? '')"></div>
+                                        <div class="compare-gk-card-info">
+                                            <span class="compare-gk-card-name">{{ p.name }}</span>
+                                            <span class="compare-gk-card-version">{{ p.version }}</span>
+                                        </div>
+                                    </button>
+                                </div>
+                                <p *ngIf="getCompareOpponents().length === 0" class="no-data">No hay jugadores disponibles.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="loadingOpponentTechniques" class="compare-loading">Cargando técnicas del rival...</div>
+
+                    <div *ngIf="!loadingOpponentTechniques && getSelectedOpponent() && getCompareRowsFiltered().length > 0" class="compare-cards-wrapper">
+                        <div *ngFor="let row of getCompareRowsFiltered()" class="compare-row">
+                            <div class="compare-row-label">
+                                {{ row.label }}
+                            </div>
+                            <div class="compare-cards-row">
+                                <div class="compare-tech-card">
+                                    <img *ngIf="getCompareLeftTechnique(row)" [src]="getTechImageUrl(getCompareLeftTechnique(row))" [alt]="row.attackTypeKey" class="compare-tech-card-icon">
+                                    <div class="compare-tech-card-body" *ngIf="getCompareLeftTechnique(row)">
+                                        <span class="compare-tech-card-name">{{ getCompareLeftTechnique(row)!.name }}</span>
+                                        <span class="compare-tech-card-momentum">{{ getCompareLeftMomentum(row) }}</span>
+                                    </div>
+                                </div>
+                                <div class="compare-tech-card">
+                                    <img *ngIf="getCompareRightTechnique(row)" [src]="getTechImageUrl(getCompareRightTechnique(row))" [alt]="row.defendTypeKey" class="compare-tech-card-icon">
+                                    <div class="compare-tech-card-body" *ngIf="getCompareRightTechnique(row)">
+                                        <span class="compare-tech-card-name">{{ getCompareRightTechnique(row)!.name }}</span>
+                                        <span class="compare-tech-card-momentum">{{ getCompareRightMomentum(row) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="compare-bar-wrapper">
+                                <div class="compare-bar-container">
+                                    <div class="compare-bar compare-bar-attacker" [style.width.%]="getCompareBarLeftPct(row)" [title]="getCompareBarLeftPct(row) + '%'">
+                                        <span class="compare-bar-label" *ngIf="getCompareBarLeftPct(row) >= 15">{{ getCompareBarLeftPct(row) }}%</span>
+                                    </div>
+                                    <div class="compare-bar compare-bar-goalkeeper" [style.width.%]="getCompareBarRightPct(row)" [title]="getCompareBarRightPct(row) + '%'">
+                                        <span class="compare-bar-label" *ngIf="getCompareBarRightPct(row) >= 15">{{ getCompareBarRightPct(row) }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="compare-note">El jugador actual usa las pasivas y latentes que tengas marcadas en el panel izquierdo. El rival se calcula con todos sus bonos de pasiva y latentes.</p>
+                    </div>
+
+                    <p *ngIf="getSelectedOpponent() && !loadingOpponentTechniques && opponentTechniques.length === 0" class="no-data">Este rival no tiene técnicas cargadas.</p>
+                    <p *ngIf="getSelectedOpponent() && !loadingOpponentTechniques && opponentTechniques.length > 0 && getCompareRowsFiltered().length === 0" class="no-data">No hay enfrentamientos posibles con las técnicas disponibles.</p>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

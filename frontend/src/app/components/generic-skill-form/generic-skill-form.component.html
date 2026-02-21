@@ -1,0 +1,128 @@
+<div class="form-container">
+    <div class="form-header">
+        <h1>{{ isEditMode ? 'Editar' : 'Nueva' }} Habilidad (Passive/Latent)</h1>
+        <button class="btn-secondary" (click)="cancel()">Cancelar</button>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #skillForm="ngForm">
+        <!-- Basic Info -->
+        <div class="form-section">
+            <h2>Información Básica</h2>
+
+            <div class="form-group">
+                <label for="name">Nombre *</label>
+                <input type="text" id="name" [(ngModel)]="skill.name" name="name" required
+                    placeholder="Capitán del Equipo">
+            </div>
+
+            <div class="form-group">
+                <label for="effect">Efecto *</label>
+                <textarea id="effect" [(ngModel)]="skill.effect" name="effect" required rows="3"
+                    placeholder="+5% a stats ofensivos del equipo"></textarea>
+            </div>
+        </div>
+
+        <!-- Bonuses -->
+        <div class="form-section">
+            <h2>Bonificaciones</h2>
+
+            <!-- Add Bonus Form -->
+            <div class="bonus-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bonusType">Tipo de Bonus</label>
+                        <select id="bonusType" [(ngModel)]="newBonus.type" name="bonusType">
+                            <option *ngFor="let type of bonusTypes" [value]="type.value">
+                                {{ type.label }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bonusValue">Valor (%)</label>
+                        <input type="number" id="bonusValue" [(ngModel)]="newBonus.value" name="bonusValue"
+                            placeholder="10">
+                    </div>
+
+                    <!-- Selector de stat (solo para tipo 'stat') -->
+                    <div class="form-group" *ngIf="newBonus.type === 'stat'">
+                        <label for="statName">Stat</label>
+                        <select id="statName" [(ngModel)]="newBonus.statName" name="statName">
+                            <option *ngFor="let stat of statNames" [value]="stat">
+                                {{ stat }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Selector de tipo de técnica (solo para 'tech_power_type') -->
+                    <div class="form-group" *ngIf="newBonus.type === 'tech_power_type'">
+                        <label for="techniqueType">Tipo de Técnica</label>
+                        <select id="techniqueType" [(ngModel)]="newBonus.techniqueType" name="techniqueType">
+                            <option *ngFor="let techType of techTypes" [value]="techType.value">
+                                {{ techType.label }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Selector de técnicas concretas (solo para 'tech_power_specific') -->
+                <div class="technique-selector" *ngIf="newBonus.type === 'tech_power_specific'">
+                    <div class="form-group">
+                        <label for="playerName">Jugador</label>
+                        <select id="playerName" [(ngModel)]="selectedPlayerName" name="playerName" 
+                                (ngModelChange)="onPlayerNameChange()">
+                            <option value="">-- Seleccionar jugador --</option>
+                            <option *ngFor="let name of getUniquePlayerNames()" [value]="name">
+                                {{ name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="techniques-list" *ngIf="playerTechniques.length > 0">
+                        <label>Técnicas (selecciona una o más):</label>
+                        <div class="technique-checkboxes">
+                            <div *ngFor="let tech of playerTechniques" class="technique-checkbox">
+                                <label [class.selected]="isTechniqueSelected(tech.id)">
+                                    <input type="checkbox" 
+                                           [checked]="isTechniqueSelected(tech.id)"
+                                           (change)="toggleTechniqueSelection(tech.id)">
+                                    <span class="tech-name">{{ tech.name }}</span>
+                                    <span class="tech-type">({{ tech.type }})</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="selected-count" *ngIf="selectedTechniqueIds.length > 0">
+                            {{ selectedTechniqueIds.length }} técnica(s) seleccionada(s)
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-add" (click)="addBonus()"
+                        [disabled]="newBonus.type === 'tech_power_specific' && selectedTechniqueIds.length === 0">
+                    Añadir Bonus
+                </button>
+            </div>
+
+            <!-- Bonuses List -->
+            <div class="bonuses-list" *ngIf="skill.bonuses && skill.bonuses.length > 0">
+                <h3>Bonuses Añadidos:</h3>
+                <div *ngFor="let bonus of skill.bonuses; let i = index" class="bonus-item">
+                    <div class="bonus-info">
+                        <strong>{{ bonus.type }}</strong>: {{ bonus.value > 0 ? '+' : '' }}{{ bonus.value }}%
+                        <span class="bonus-detail"> ({{ getBonusDisplayInfo(bonus) }})</span>
+                    </div>
+                    <button type="button" class="btn-remove" (click)="removeBonus(i)">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="!skillForm.form.valid">
+                {{ isEditMode ? 'Actualizar' : 'Crear' }} Habilidad
+            </button>
+        </div>
+    </form>
+</div>

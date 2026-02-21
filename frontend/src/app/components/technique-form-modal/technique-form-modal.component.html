@@ -1,0 +1,47 @@
+<div class="modal" *ngIf="visible" (click)="onCancel()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>{{ isEditMode ? 'Editar Técnica' : 'Crear Nueva Técnica' }}</h3>
+            <button type="button" class="close-btn" (click)="onCancel()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="techName">Nombre *</label>
+                <input type="text" id="techName" [(ngModel)]="formTechnique.name">
+            </div>
+            <div class="form-group">
+                <label for="techType">Tipo *</label>
+                <select id="techType" [(ngModel)]="formTechnique.type">
+                    <option value="">-- Seleccionar --</option>
+                    <option *ngFor="let type of techniqueTypes" [value]="type">{{ type }}</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="techPower">Potencia *</label>
+                <input type="number" id="techPower" [(ngModel)]="formTechnique.power">
+            </div>
+            <div class="form-group">
+                <label for="techStamina">Coste de Stamina *</label>
+                <input type="number" id="techStamina" [(ngModel)]="formTechnique.staminaCost">
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="formTechnique.isCombined">
+                    <span>Técnica Combinada</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="techDesc">Descripción</label>
+                <textarea id="techDesc" [(ngModel)]="formTechnique.description" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="onCancel()">Cancelar</button>
+            <button type="button" class="btn-primary" (click)="onSave()" [disabled]="!isValid">
+                {{ isEditMode ? 'Actualizar' : 'Crear' }}
+            </button>
+        </div>
+    </div>
+</div>

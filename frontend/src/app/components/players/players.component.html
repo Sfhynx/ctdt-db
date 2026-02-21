@@ -1,0 +1,231 @@
+<div class="weather-container">
+  <div *ngIf="loading && players.length === 0" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando jugadores...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+      <span class="material-icons error-icon">warning</span>
+      <p>{{ error }}</p>
+  </div>
+
+  <!-- Botones de control -->
+  <div *ngIf="!loading && !error && players.length > 0" class="controls-row">
+    <div class="view-toggle-container">
+      <button class="view-toggle-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'; calculateItemsPerPage(); updatePagination();" title="Vista de lista">
+        <span class="material-icons">view_list</span>
+      </button>
+      <button class="view-toggle-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'; calculateItemsPerPage(); updatePagination();" title="Vista de grid">
+        <span class="material-icons">grid_view</span>
+      </button>
+    </div>
+    <button class="toggle-filters-btn" (click)="toggleFilters()" [title]="showFilters ? 'Ocultar filtros' : 'Mostrar filtros'">
+      <span class="material-icons">{{ showFilters ? 'filter_list' : 'filter_list_off' }}</span>
+      <span class="badge" *ngIf="filterName || filterPosition || filterElement || filterCountry"></span>
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div *ngIf="showFilters && !loading && !error && players.length > 0" class="filters-container">
+      <div class="filters-header">
+          <h2>Filtros</h2>
+          <button class="clear-filters-btn" (click)="clearFilters()" *ngIf="filterName || filterPosition || filterElement">
+              Limpiar filtros
+          </button>
+      </div>
+      <div class="filters-grid">
+          <div class="filter-group">
+              <label for="filter-name">Nombre</label>
+              <input
+                  id="filter-name"
+                  type="text"
+                  class="filter-input"
+                  [(ngModel)]="filterName"
+                  (ngModelChange)="onFilterChange()"
+                  placeholder="Buscar por nombre...">
+          </div>
+          <div class="filter-group">
+              <label for="filter-position">Posición</label>
+              <select
+                  id="filter-position"
+                  class="filter-select"
+                  [(ngModel)]="filterPosition"
+                  (ngModelChange)="onFilterChange()">
+                  <option value="">Todas las posiciones</option>
+                  <option *ngFor="let position of availablePositions" [value]="position">
+                      {{ position }}
+                  </option>
+              </select>
+          </div>
+          <div class="filter-group">
+              <label for="filter-element">Color/Elemento</label>
+              <select
+                  id="filter-element"
+                  class="filter-select"
+                  [(ngModel)]="filterElement"
+                  (ngModelChange)="onFilterChange()">
+                  <option value="">Todos los elementos</option>
+                  <option *ngFor="let element of availableElements" [value]="element">
+                      {{ element }}
+                  </option>
+              </select>
+          </div>
+          <div class="filter-group">
+              <label for="filter-element">Nacionalidad</label>
+              <select
+                  id="filter-country"
+                  class="filter-select"
+                  [(ngModel)]="filterCountry"
+                  (ngModelChange)="onFilterChange()">
+                  <option value="">Todos los paises</option>
+                  <option *ngFor="let country of availableCountries" [value]="country.name">
+                      {{ country.name }}
+                  </option>
+              </select>
+          </div>
+      </div>
+      <div class="filter-results-info" *ngIf="filteredPlayers.length !== players.length">
+          Mostrando {{ filteredPlayers.length }} de {{ players.length }} jugadores
+      </div>
+  </div>
+
+  <!-- List View -->
+  <div *ngIf="!loading && !error && players.length > 0 && viewMode === 'list'" class="table-container">
+      <table class="players-table">
+          <thead>
+              <tr>
+                  <th>Jugador</th>
+                  <th>Pos.</th>
+                  <th>Equipo</th>
+                  <th class="stat-header">Total</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr *ngFor="let player of paginatedPlayers" class="player-row" (click)="onPlayerClick(player.id)">
+                  <td class="player-name-cell">
+                    <div class="player-card">
+                      <div class="thumb-wrapper" *ngIf="player.cardImageUrl">
+                        <img [src]="getImageUrl(player)" [alt]="player.name" loading="lazy">
+                      </div>
+                      <div class="player-info">
+                        <div class="element-bar" [style.background]="getElementColor(player.element?.name ?? '')"></div>
+                        <div class="player-info-text">
+                          <span class="player-name-text">{{ player.name }}</span>
+                          <span class="player-version-text">{{ player.version }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                      <span class="position-badge-small" [style.background]="getPositionColor(player.positions[0])">
+                          {{ getPositionsDisplay(player.positions) }}
+                      </span>
+                  </td>
+                  <td class="team-cell">{{ player.team?.name ?? '' }}</td>
+                  <td class="stat-cell total-stat">{{ player.stats.total }}</td>
+              </tr>
+          </tbody>
+      </table>
+      <div *ngIf="filteredPlayers.length === 0" class="no-results">
+          <p>No se encontraron jugadores con los filtros seleccionados.</p>
+      </div>
+      
+      <!-- Paginación -->
+      <div *ngIf="filteredPlayers.length > 0 && totalPages > 1" class="pagination-container pagination-bottom">
+          <div class="pagination-info">
+            Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ filteredPlayers.length }} jugadores
+          </div>
+          <div class="pagination-controls">
+              <button
+                  class="pagination-btn"
+                  (click)="previousPage()"
+                  [disabled]="currentPage === 1"
+                  [class.disabled]="currentPage === 1">
+                  Anterior
+              </button>
+
+              <div class="page-numbers">
+                  <button
+                      *ngFor="let page of getPageNumbers()"
+                      class="page-number-btn"
+                      [class.active]="page === currentPage"
+                      (click)="goToPage(page)">
+                      {{ page }}
+                  </button>
+              </div>
+
+              <button
+                  class="pagination-btn"
+                  (click)="nextPage()"
+                  [disabled]="currentPage === totalPages"
+                  [class.disabled]="currentPage === totalPages">
+                  Siguiente
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Grid View -->
+  <div *ngIf="!loading && !error && players.length > 0 && viewMode === 'grid'" class="grid-container">
+      <div class="players-grid">
+          <div *ngFor="let player of paginatedPlayers" 
+               class="player-grid-card" 
+               (click)="onPlayerClick(player.id)"
+               [style.background-image]="player.cardImageUrl ? 'url(' + getImageUrl(player) + ')' : 'none'"
+               [style.border-color]="getElementColor(player.element?.name ?? '')"
+               [class.no-image]="!player.cardImageUrl">
+              <div class="grid-card-positions-top">
+                  <span class="position-badge-grid">
+                      {{ getPositionsDisplay(player.positions) }}
+                  </span>
+              </div>
+              <div class="grid-card-category-top" *ngIf="player.category">
+                  <img [src]="getCategoryIconUrl(player.category)" [alt]="player.category" class="category-icon">
+              </div>
+              <div class="grid-card-overlay">
+                  <div class="grid-card-content">
+                      <h3 class="grid-card-name">{{ player.name }}</h3>
+                      <p class="grid-card-version">{{ player.version }}</p>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div *ngIf="filteredPlayers.length === 0" class="no-results">
+          <p>No se encontraron jugadores con los filtros seleccionados.</p>
+      </div>
+      
+      <!-- Paginación -->
+      <div *ngIf="filteredPlayers.length > 0 && totalPages > 1" class="pagination-container pagination-bottom">
+          <div class="pagination-info">
+            Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ filteredPlayers.length }} jugadores
+          </div>
+          <div class="pagination-controls">
+              <button
+                  class="pagination-btn"
+                  (click)="previousPage()"
+                  [disabled]="currentPage === 1"
+                  [class.disabled]="currentPage === 1">
+                  Anterior
+              </button>
+
+              <div class="page-numbers">
+                  <button
+                      *ngFor="let page of getPageNumbers()"
+                      class="page-number-btn"
+                      [class.active]="page === currentPage"
+                      (click)="goToPage(page)">
+                      {{ page }}
+                  </button>
+              </div>
+
+              <button
+                  class="pagination-btn"
+                  (click)="nextPage()"
+                  [disabled]="currentPage === totalPages"
+                  [class.disabled]="currentPage === totalPages">
+                  Siguiente
+              </button>
+          </div>
+      </div>
+  </div>
+</div>

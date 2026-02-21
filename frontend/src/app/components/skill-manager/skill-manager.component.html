@@ -1,0 +1,106 @@
+<div class="admin-container">
+  <header class="admin-page-header">
+    <h1>Gestión de Habilidades</h1>
+    <div class="tabs">
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'team'" (click)="setActiveTab('team')">
+      <span class="material-icons">sports_soccer</span> Team Skills
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab === 'generic'" (click)="setActiveTab('generic')">
+      <span class="material-icons">bolt</span> Habilidades (Passive/Latent)
+    </button>
+    </div>
+  </header>
+
+  <div class="tab-content-wrapper">
+  <!-- Team Skills Tab -->
+  <div *ngIf="activeTab === 'team'" class="tab-content">
+    <div class="section-header">
+      <h2>Team Skills</h2>
+      <button class="btn-primary" (click)="navigateToNewTeamSkill()">
+        <span class="material-icons">add</span> Nueva Team Skill
+      </button>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let skill of teamSkills" class="list-item">
+        <div class="list-item-content">
+          <div class="skill-info">
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="skill-effect">{{ skill.effect }}</span>
+          </div>
+          <div class="item-actions">
+            <button type="button" (click)="copyTeamSkill(skill.id)" class="icon-btn icon-btn-copy" title="Copiar">
+              <span class="material-icons">content_copy</span>
+            </button>
+            <button type="button" (click)="editTeamSkill(skill.id)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteTeamSkill(skill.id, skill.name)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="teamSkills.length === 0" class="no-data">
+        No hay team skills creadas
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Skills Tab -->
+  <div *ngIf="activeTab === 'generic'" class="tab-content">
+    <div class="sticky-search-bar">
+      <div class="section-header">
+        <h2>Habilidades (Passive/Latent)</h2>
+        <button class="btn-primary" (click)="navigateToNewGenericSkill()">
+          <span class="material-icons">add</span> Nueva Habilidad
+        </button>
+      </div>
+      <div class="search-section">
+        <div class="search-input-wrapper">
+          <span class="material-icons search-icon">search</span>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Buscar por nombre o efecto..." 
+            [(ngModel)]="searchFilter"
+            (ngModelChange)="onSearchChange()">
+        </div>
+      </div>
+    </div>
+    <div class="list-section">
+      <div *ngFor="let skill of filteredGenericSkills" class="list-item">
+        <div class="list-item-content">
+          <div class="skill-info">
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="skill-effect">{{ skill.effect }}</span>
+            <div *ngIf="skill.bonuses && skill.bonuses.length > 0" class="skill-bonuses">
+              <span class="bonuses-label">Bonuses:</span>
+              <span *ngFor="let bonus of skill.bonuses; let last = last" class="bonus-tag">
+                {{ getBonusDisplayText(bonus) }}
+                <span *ngIf="!last">, </span>
+              </span>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button type="button" (click)="copySkill(skill.id)" class="icon-btn icon-btn-copy" title="Copiar">
+              <span class="material-icons">content_copy</span>
+            </button>
+            <button type="button" (click)="editSkill(skill.id)" class="icon-btn" title="Editar">
+              <span class="material-icons">edit</span>
+            </button>
+            <button type="button" (click)="deleteSkill(skill.id, skill.name)" class="icon-btn icon-btn-delete" title="Eliminar">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="filteredGenericSkills.length === 0 && genericSkills.length > 0" class="no-data">
+        No se encontraron habilidades que coincidan con la búsqueda
+      </div>
+      <div *ngIf="genericSkills.length === 0" class="no-data">
+        No hay habilidades creadas
+      </div>
+    </div>
+  </div>
+  </div>
+</div>

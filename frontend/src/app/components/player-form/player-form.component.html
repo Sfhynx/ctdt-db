@@ -1,0 +1,488 @@
+<div class="form-container">
+    <div class="form-header">
+        <h1>{{ isEditMode ? 'Editar Jugador' : 'Nuevo Jugador' }}</h1>
+        <div class="header-actions">
+            <button type="button" class="btn-secondary" (click)="cancel()">Cancelar</button>
+            <button type="submit" form="playerForm" class="btn-primary"
+                [disabled]="!playerForm || !playerForm.form.valid">
+                {{ isEditMode ? 'Actualizar' : 'Crear' }} Jugador
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Navigation (only in edit mode) -->
+    <div class="tabs" *ngIf="isEditMode">
+        <button type="button" class="tab-btn" [class.active]="activeTab === 'info'" (click)="setActiveTab('info')">
+            <span class="material-icons">bar_chart</span> Información y Stats
+        </button>
+        <button type="button" class="tab-btn" [class.active]="activeTab === 'skills'" (click)="setActiveTab('skills')">
+            <span class="material-icons">bolt</span> Habilidades
+        </button>
+        <button type="button" class="tab-btn" [class.active]="activeTab === 'techniques'"
+            (click)="setActiveTab('techniques')">
+            <span class="material-icons">sports_soccer</span> Técnicas
+        </button>
+    </div>
+
+    <div class="form-content-wrapper">
+        <form id="playerForm" (ngSubmit)="onSubmit()" #playerForm="ngForm">
+        <!-- Tab 1: Info & Stats -->
+        <div *ngIf="!isEditMode || activeTab === 'info'">
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h2>Información Básica</h2>
+                <div class="form-grid">
+                    <div class="form-group name-autocomplete-wrapper">
+                        <label for="name">Nombre *</label>
+                        <input *ngIf="isEditMode" type="text" id="name" [(ngModel)]="player.name" name="name" required>
+                        <div *ngIf="!isEditMode" class="autocomplete-wrap">
+                            <input type="text" id="name" [(ngModel)]="player.name" name="name" required
+                                (input)="onPlayerNameInput()" (focus)="onPlayerNameInput()"
+                                (blur)="hidePlayerBaseSuggestions()"
+                                placeholder="Escribe y elige de la lista (crea el nombre en Datos auxiliares si no existe)">
+                            <div class="autocomplete-dropdown" *ngIf="showPlayerBaseSuggestions && playerBaseSuggestions.length">
+                                <button type="button" class="autocomplete-item" *ngFor="let pb of playerBaseSuggestions"
+                                    (mousedown)="selectPlayerBase(pb); $event.preventDefault()">{{ pb.name }}</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="version">Versión *</label>
+                        <input type="text" id="version" [(ngModel)]="player.version" name="version" required
+                            placeholder="As de Japón">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rarity">Rareza *</label>
+                        <select id="rarity" [(ngModel)]="selectedRarityId" name="rarity" required>
+                            <option [ngValue]="undefined">-- Seleccionar rareza --</option>
+                            <option *ngFor="let r of rarities" [ngValue]="r.id">{{ r.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="element">Elemento *</label>
+                        <select id="element" [(ngModel)]="selectedElementId" name="element" required>
+                            <option [ngValue]="undefined">-- Seleccionar elemento --</option>
+                            <option *ngFor="let e of elements" [ngValue]="e.id">{{ e.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Categoría</label>
+                        <select id="category" [(ngModel)]="player.category" name="category">
+                            <option [ngValue]="undefined">Ninguna</option>
+                            <option value="DreamFest">DreamFest</option>
+                            <option value="DreamCollection">DreamCollection</option>
+                            <option value="SuperStar">SuperStar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="team">Equipo</label>
+                        <select id="team" [(ngModel)]="selectedTeamId" name="team">
+                            <option [ngValue]="undefined">-- Seleccionar equipo --</option>
+                            <option *ngFor="let team of teams" [ngValue]="team.id">
+                                {{ team.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="series">Serie</label>
+                        <select id="series" [(ngModel)]="selectedSeriesId" name="series">
+                            <option [ngValue]="undefined">-- Seleccionar serie --</option>
+                            <option *ngFor="let s of series" [ngValue]="s.id">
+                                {{ s.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Posiciones *</label>
+                        <div class="positions-row">
+                            <label class="position-checkbox">
+                                <input type="checkbox" value="DL" (change)="togglePosition('DL')"
+                                    [checked]="player.positions.includes('DL')">
+                                <span>DL</span>
+                            </label>
+                            <label class="position-checkbox">
+                                <input type="checkbox" value="MCA" (change)="togglePosition('MCA')"
+                                    [checked]="player.positions.includes('MCA')">
+                                <span>MCA</span>
+                            </label>
+                            <label class="position-checkbox">
+                                <input type="checkbox" value="MCD" (change)="togglePosition('MCD')"
+                                    [checked]="player.positions.includes('MCD')">
+                                <span>MCD</span>
+                            </label>
+                            <label class="position-checkbox">
+                                <input type="checkbox" value="DF" (change)="togglePosition('DF')"
+                                    [checked]="player.positions.includes('DF')">
+                                <span>DF</span>
+                            </label>
+                            <label class="position-checkbox">
+                                <input type="checkbox" value="PO" (change)="togglePosition('PO')"
+                                    [checked]="player.positions.includes('PO')">
+                                <span>PO</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="groundBallSkill">Balón Bajo *</label>
+                        <select id="groundBallSkill" [(ngModel)]="player.groundBallSkill" name="groundBallSkill"
+                            required>
+                            <option value="Normal">Normal</option>
+                            <option value="Bueno">Bueno</option>
+                            <option value="Muy Bueno">Muy Bueno</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="highBallSkill">Balón Alto *</label>
+                        <select id="highBallSkill" [(ngModel)]="player.highBallSkill" name="highBallSkill" required>
+                            <option value="Normal">Normal</option>
+                            <option value="Bueno">Bueno</option>
+                            <option value="Muy Bueno">Muy Bueno</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="cardImageFile">Imagen de la Carta</label>
+                      <input type="file" id="cardImageFile" name="cardImageFile"
+                             accept="image/*" (change)="onImageSelected($event)">
+                      <div *ngIf="selectedImagePreview" class="image-preview">
+                          <img [src]="selectedImagePreview" alt="Vista previa" style="max-width: 200px; margin-top: 10px;">
+                      </div>
+                      <div *ngIf="player.cardImageUrl && !selectedImagePreview" class="current-image">
+                          <p>Imagen actual:</p>
+                          <img [src]="player.cardImageUrl" alt="Imagen actual" style="max-width: 200px; margin-top: 10px;">
+                      </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="form-section">
+                <h2>Estadísticas</h2>
+
+                <!-- Energy - Standalone -->
+                <div class="form-group standalone-stat">
+                    <label for="energy">Energía *</label>
+                    <input type="number" id="energy" [(ngModel)]="player.stats.energy" name="energy" required>
+                </div>
+
+                <!-- Attack Stats Group - Field Players Only -->
+                <div class="stats-group" *ngIf="!isGoalkeeper()">
+                    <h3 class="stats-group-title">Ataque</h3>
+                    <div class="stats-grid">
+                        <div class="form-group">
+                            <label for="dribble">Regate *</label>
+                            <input type="number" id="dribble" [(ngModel)]="player.stats.dribble" name="dribble">
+                        </div>
+                        <div class="form-group">
+                            <label for="shot">Tiro *</label>
+                            <input type="number" id="shot" [(ngModel)]="player.stats.shot" name="shot">
+                        </div>
+                        <div class="form-group">
+                            <label for="pass">Pase *</label>
+                            <input type="number" id="pass" [(ngModel)]="player.stats.pass" name="pass">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defense Stats Group - Field Players Only -->
+                <div class="stats-group" *ngIf="!isGoalkeeper()">
+                    <h3 class="stats-group-title">Defensa</h3>
+                    <div class="stats-grid">
+                        <div class="form-group">
+                            <label for="tackle">Entrada *</label>
+                            <input type="number" id="tackle" [(ngModel)]="player.stats.tackle" name="tackle">
+                        </div>
+                        <div class="form-group">
+                            <label for="block">Bloqueo *</label>
+                            <input type="number" id="block" [(ngModel)]="player.stats.block" name="block">
+                        </div>
+                        <div class="form-group">
+                            <label for="intercept">Intercepción *</label>
+                            <input type="number" id="intercept" [(ngModel)]="player.stats.intercept" name="intercept">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Goalkeeper Stats Group - Goalkeepers Only -->
+                <div class="stats-group" *ngIf="isGoalkeeper()">
+                    <h3 class="stats-group-title">Parada</h3>
+                    <div class="stats-grid">
+                        <div class="form-group">
+                            <label for="punch">Puño *</label>
+                            <input type="number" id="punch" [(ngModel)]="player.stats.punch" name="punch">
+                        </div>
+                        <div class="form-group">
+                            <label for="catchStat">Blocaje *</label>
+                            <input type="number" id="catchStat" [(ngModel)]="player.stats.catchStat" name="catchStat">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Physical Stats Group - Always Last -->
+                <div class="stats-group">
+                    <h3 class="stats-group-title">Físico</h3>
+                    <div class="stats-grid">
+                        <div class="form-group">
+                            <label for="speed">Velocidad *</label>
+                            <input type="number" id="speed" [(ngModel)]="player.stats.speed" name="speed" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="power">Potencia *</label>
+                            <input type="number" id="power" [(ngModel)]="player.stats.power" name="power" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="technique">Técnica *</label>
+                            <input type="number" id="technique" [(ngModel)]="player.stats.technique" name="technique"
+                                required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Skills (only in edit mode) -->
+        <div *ngIf="isEditMode && activeTab === 'skills'">
+            <div class="form-section">
+                <h2>Habilidades</h2>
+
+                <div class="form-group">
+                    <label for="teamSkill">Team Skill</label>
+                    <select id="teamSkill" [(ngModel)]="selectedTeamSkillId" name="teamSkill">
+                        <option [ngValue]="undefined">-- Sin Team Skill --</option>
+                        <option *ngFor="let skill of teamSkills" [ngValue]="skill.id">
+                            {{ skill.name }} - {{ skill.effect }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-with-counter">
+                        <label>Habilidades (Passive/Latent)</label>
+                        <span class="skill-counter">{{ selectedLatentSkillIds.length + (selectedPassiveSkillId ? 1 : 0)
+                            }}/9 seleccionadas</span>
+                    </div>
+                    <p class="skills-help-text">La primera habilidad será la <strong>Passive</strong> (resaltada en
+                        dorado). Las demás serán <strong>Latent</strong> (hasta 8).</p>
+
+                    <!-- Add new skill with search -->
+                    <div class="add-skill-section"
+                        *ngIf="(selectedLatentSkillIds.length + (selectedPassiveSkillId ? 1 : 0)) < 9 && getAvailableLatentSkills().length > 0">
+                        <div class="skill-search-wrapper">
+                            <div class="skill-search-input-wrapper">
+                                <span class="material-icons search-icon">search</span>
+                                <input
+                                    type="text"
+                                    class="skill-search-input"
+                                    placeholder="Buscar habilidad por nombre..."
+                                    [(ngModel)]="latentSkillSearchFilter"
+                                    (ngModelChange)="onLatentSkillSearchChange()"
+                                    [ngModelOptions]="{standalone: true}">
+                                <button
+                                    *ngIf="latentSkillSearchFilter"
+                                    type="button"
+                                    class="clear-search-btn"
+                                    (click)="latentSkillSearchFilter = ''"
+                                    title="Limpiar búsqueda">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                            <div class="skill-search-results" *ngIf="latentSkillSearchFilter && getFilteredAvailableLatentSkills().length > 0">
+                                <div
+                                    *ngFor="let skill of getFilteredAvailableLatentSkills()"
+                                    class="skill-search-result-item"
+                                    (click)="selectLatentSkillFromSearch(skill)">
+                                    <div class="skill-result-content">
+                                        <div class="skill-result-header">
+                                            <strong class="skill-result-name">{{ skill.name }}</strong>
+                                        </div>
+                                        <div class="skill-result-effect">{{ skill.effect }}</div>
+                                        <div class="skill-result-bonuses" *ngIf="skill.bonuses && skill.bonuses.length > 0">
+                                            <span *ngFor="let bonus of skill.bonuses" class="bonus-tag-small">
+                                                {{ bonus.type === 'stat' && bonus.statName ? bonus.statName : bonus.type }}:
+                                                {{ bonus.value > 0 ? '+' : '' }}{{ bonus.value }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="material-icons add-icon">add_circle</span>
+                                </div>
+                            </div>
+                            <div class="skill-search-no-results" *ngIf="latentSkillSearchFilter && getFilteredAvailableLatentSkills().length === 0">
+                                <span class="material-icons">search_off</span>
+                                <p>No se encontraron habilidades que coincidan con "{{ latentSkillSearchFilter }}"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected skills (passive first, then latents) -->
+                    <div class="selected-latent-skills">
+                        <!-- Passive skill (first one, highlighted) -->
+                        <div *ngIf="selectedPassiveSkillId" class="selected-latent-item passive-skill">
+                            <div class="skill-content">
+                                <div class="skill-info">
+                                    <div class="skill-name-with-badge">
+                                        <strong>{{ getSkillById(selectedPassiveSkillId)?.name }}</strong>
+                                        <span class="passive-badge">PASSIVE</span>
+                                    </div>
+                                    <div class="skill-effect">{{ getSkillById(selectedPassiveSkillId)?.effect }}</div>
+                                    <div class="skill-bonuses"
+                                        *ngIf="getSkillById(selectedPassiveSkillId)?.bonuses && getSkillById(selectedPassiveSkillId)!.bonuses!.length > 0">
+                                        <span *ngFor="let bonus of getSkillById(selectedPassiveSkillId)!.bonuses"
+                                            class="bonus-tag">
+                                            {{ getBonusDisplayText(bonus) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="remove-skill-btn" (click)="removePassiveSkill()"
+                                title="Eliminar">
+                                Eliminar
+                            </button>
+                        </div>
+
+                        <!-- Latent skills -->
+                        <div *ngFor="let skill of getSelectedLatentSkills()" class="selected-latent-item">
+                            <div class="skill-content">
+                                <div class="skill-info">
+                                    <strong>{{ skill.name }}</strong>
+                                    <div class="skill-effect">{{ skill.effect }}</div>
+                                    <div class="skill-bonuses" *ngIf="skill.bonuses && skill.bonuses.length > 0">
+                                        <span *ngFor="let bonus of skill.bonuses" class="bonus-tag">
+                                            {{ getBonusDisplayText(bonus) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="remove-skill-btn" (click)="removeLatentSkill(skill.id)"
+                                title="Eliminar">
+                                Eliminar
+                            </button>
+                        </div>
+
+                        <div *ngIf="!selectedPassiveSkillId && selectedLatentSkillIds.length === 0"
+                            class="no-skills-message">
+                            No hay habilidades seleccionadas. Usa el selector de arriba para añadir.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Techniques (only in edit mode) -->
+        <div *ngIf="isEditMode && activeTab === 'techniques'">
+            <div class="form-section">
+                <h2>Técnicas</h2>
+                <p class="help-text">Máximo 7 técnicas. Una debe ser marcada como principal.</p>
+
+                <!-- Action buttons -->
+                <div class="technique-actions">
+                    <button type="button" class="btn-secondary" (click)="openCreateTechniqueModal()"
+                        [disabled]="player.techniques.length >= 7">
+                        <span class="material-icons">add</span> Crear Nueva Técnica
+                    </button>
+                    <button type="button" class="btn-secondary" (click)="showSelectTechniqueModal = true"
+                        [disabled]="player.techniques.length >= 7">
+                        <span class="material-icons">library_add</span> Seleccionar Existente
+                    </button>
+                </div>
+
+                <!-- Techniques list -->
+                <div class="techniques-list" *ngIf="player.techniques.length > 0">
+                    <div *ngFor="let technique of player.techniques; let i = index" class="technique-item">
+                        <div class="technique-main-indicator">
+                            <input type="radio" [name]="'mainTechnique'" [checked]="technique.isMain"
+                                (change)="setMainTechnique(i)" [id]="'main-' + i">
+                            <label [for]="'main-' + i" title="Marcar como principal">
+                                <span class="material-icons">{{ technique.isMain ? 'star' : 'star_border' }}</span>
+                            </label>
+                        </div>
+                        <div class="technique-info">
+                            <div class="technique-header">
+                                <strong>{{ technique.name }}</strong>
+                                <span class="technique-type-badge">{{ technique.type }}</span>
+                                <span class="main-badge" *ngIf="technique.isMain">PRINCIPAL</span>
+                            </div>
+                            <div class="technique-details">
+                                <span *ngIf="technique.isCombined" class="combined-icon-inline" title="Técnica Combinada">
+                                    <span class="material-icons">groups</span>
+                                </span>
+                                <span>Potencia: {{ technique.power }}</span>
+                                <span>Stamina: {{ technique.staminaCost }}</span>
+                            </div>
+                            <div class="technique-description" *ngIf="technique.description">
+                                {{ technique.description }}
+                            </div>
+                        </div>
+                        <button type="button" class="remove-btn" (click)="removeTechnique(i)" title="Eliminar">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div *ngIf="player.techniques.length === 0" class="no-techniques-message">
+                    No hay técnicas asignadas. Crea una nueva o selecciona una existente.
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Technique Modal -->
+        <app-technique-form-modal
+            [visible]="showCreateTechniqueModal"
+            [technique]="editingTechnique"
+            [playerName]="player.name"
+            [playerPositions]="player.positions || []"
+            [techTypes]="techTypes"
+            [isGoalkeeper]="isGoalkeeper()"
+            (save)="onTechniqueSave($event)"
+            (cancel)="onTechniqueCancel()">
+        </app-technique-form-modal>
+
+        <!-- Select Technique Modal -->
+        <div class="modal" *ngIf="showSelectTechniqueModal" (click)="showSelectTechniqueModal = false">
+            <div class="modal-content" (click)="$event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>Seleccionar Técnica Existente</h3>
+                    <button type="button" class="close-btn" (click)="showSelectTechniqueModal = false">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div *ngIf="availableTechniques.length === 0" class="no-techniques-message">
+                        No hay técnicas disponibles de otras versiones de {{ player.name }}.
+                    </div>
+                    <div *ngIf="availableTechniques.length > 0" class="available-techniques-list">
+                        <div *ngFor="let technique of getFilteredAvailableTechniques()" class="available-technique-item"
+                            (click)="selectTechnique(technique)">
+                            <div class="technique-info">
+                                <div class="technique-header">
+                                    <strong>{{ technique.name }}</strong>
+                                    <span class="technique-type-badge">{{ technique.type }}</span>
+                                </div>
+                                <div class="technique-details">
+                                    <span *ngIf="technique.isCombined" class="combined-icon-inline" title="Técnica Combinada">
+                                        <span class="material-icons">groups</span>
+                                    </span>
+                                    <span>Potencia: {{ technique.power }}</span>
+                                    <span>Stamina: {{ technique.staminaCost }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary"
+                        (click)="showSelectTechniqueModal = false">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    </div>
+</div>

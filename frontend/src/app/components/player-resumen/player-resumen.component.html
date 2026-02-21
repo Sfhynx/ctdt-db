@@ -1,0 +1,152 @@
+<div class="resumen-page" *ngIf="!loading && !error && player">
+  <div id="resumen-capture" class="resumen-capture-wrapper">
+  <!-- Banda afinidad -->
+  <div class="resumen-afinidad-band" [style.background-color]="getElementColor(player.element?.name ?? '')" [attr.title]="player.element?.name ?? ''"></div>
+  <div class="resumen-tl">
+    <!-- Tarjeta ocupa toda la columna izquierda (ancho y alto del recuadro rojo) -->
+    <div class="resumen-player-card"
+         [style]="getPlayerCardBackgroundStyle()"
+         [style.border-color]="getElementColor(player.element?.name ?? '')"
+         [class.resumen-card-no-image]="!player.cardImageUrl"
+         [attr.aria-label]="player.name">
+      <div class="resumen-card-positions">
+        <span class="resumen-card-positions-badge">{{ getPositionsDisplay(player.positions) }}</span>
+      </div>
+      <div class="resumen-card-category" *ngIf="player.category">
+        <img [src]="getCategoryIconSafeUrl(player.category)" [alt]="player.category" class="resumen-card-category-icon">
+      </div>
+      <div class="resumen-card-overlay">
+        <h3 class="resumen-card-name">{{ player.name }}</h3>
+        <p class="resumen-card-version">{{ player.version }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="resumen-inner">
+    <!-- Layout: columna izquierda = tarjeta a toda la altura (recuadro rojo); derecha = skills arriba, técnicas abajo -->
+    <div class="resumen-main">
+      <div class="resumen-tr">
+        <div class="resumen-skills-zones">
+          <div class="resumen-skill-zone" *ngIf="player.teamSkill">
+            <div class="resumen-skill-cards">
+              <div class="resumen-skill-card resumen-skill-card-team">
+                <span class="material-icons resumen-skill-card-active-icon" *ngIf="isTeamSkillActive()" title="Activa para el cálculo del momentum">check_circle</span>
+                <h3 class="resumen-skill-card-name">{{ player.teamSkill.name }}</h3>
+                <p class="resumen-skill-card-effect">{{ player.teamSkill.effect }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="resumen-skill-zone" *ngIf="player.passiveSkill">
+            <div class="resumen-skill-cards">
+              <div class="resumen-skill-card resumen-skill-card-pasiva">
+                <span class="material-icons resumen-skill-card-active-icon" *ngIf="isPassiveSkillActive()" title="Activa para el cálculo del momentum">check_circle</span>
+                <h3 class="resumen-skill-card-name">{{ player.passiveSkill.name }}</h3>
+                <p class="resumen-skill-card-effect">{{ player.passiveSkill.effect }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="resumen-skill-zone resumen-skill-zone-latentes" *ngIf="player.latentSkills?.length">
+            <div class="resumen-skill-cards resumen-skill-cards-grid">
+              <div class="resumen-skill-card resumen-skill-card-latente" *ngFor="let skill of player.latentSkills">
+                <span class="material-icons resumen-skill-card-active-icon" *ngIf="isLatentSkillActive(skill.id)" title="Activa para el cálculo del momentum">check_circle</span>
+                <h3 class="resumen-skill-card-name">{{ skill.name }}</h3>
+                <p class="resumen-skill-card-effect">{{ skill.effect }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="resumen-bottom">
+      <div class="resumen-bl">
+        <h2 class="resumen-section-title">Técnicas propias</h2>
+        <div class="resumen-techniques-grid">
+          <div *ngFor="let item of techniquesWithSummary" class="resumen-technique-card" [class.main]="item.technique.isMain">
+            <div class="resumen-tech-single-line">
+              <div class="resumen-tech-thumb">
+                <img [src]="getTechniqueIconSafeUrl(item.technique.type)" [alt]="item.technique.type" loading="lazy">
+              </div>
+              <div class="resumen-tech-name-section">
+                <h3 class="resumen-tech-name">{{ item.technique.name }}</h3>
+                <span class="resumen-tech-badge" *ngIf="item.technique.isMain">Principal</span>
+              </div>
+              <div class="resumen-tech-stats-section">
+                <div class="resumen-tech-stat-inline" *ngIf="item.technique.isCombined">
+                  <span class="resumen-combined-icon" title="Técnica Combinada" aria-hidden="true">
+                    <span class="material-icons">groups</span>
+                  </span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Poder:</span>
+                  <span class="resumen-tech-value">{{ item.technique.power }}</span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Stamina:</span>
+                  <span class="resumen-tech-value">{{ item.modifiedStaminaCost }}</span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Momentum:</span>
+                  <span class="resumen-tech-value resumen-momentum-value">{{ item.momentum }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="resumen-br">
+        <h2 class="resumen-section-title">Mejores técnicas</h2>
+        <div class="resumen-techniques-grid">
+          <div *ngFor="let item of bestTechniquesWithSummary" class="resumen-technique-card">
+            <div class="resumen-tech-single-line">
+              <div class="resumen-tech-thumb">
+                <img [src]="getTechniqueIconSafeUrl(item.technique.type)" [alt]="item.technique.type" loading="lazy">
+              </div>
+              <div class="resumen-tech-name-section">
+                <h3 class="resumen-tech-name">{{ item.technique.name }}</h3>
+              </div>
+              <div class="resumen-tech-stats-section">
+                <div class="resumen-tech-stat-inline" *ngIf="item.technique.isCombined">
+                  <span class="resumen-combined-icon" title="Técnica Combinada" aria-hidden="true">
+                    <span class="material-icons">groups</span>
+                  </span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Poder:</span>
+                  <span class="resumen-tech-value">{{ item.technique.power }}</span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Stamina:</span>
+                  <span class="resumen-tech-value">{{ item.modifiedStaminaCost }}</span>
+                </div>
+                <div class="resumen-tech-stat-inline">
+                  <span class="resumen-tech-label">Momentum:</span>
+                  <span class="resumen-tech-value resumen-momentum-value">{{ item.momentum }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Pie -->
+    <div class="resumen-footer">
+      Condiciones sobre las que se han calculado los valores (Team Skill {{ teamSkillBonus }}%, Bonos {{ bondBonus }}%, Formación {{ getFormationDisplayName() }})
+    </div>
+  </div>
+  </div>
+
+  <div class="resumen-actions">
+    <button type="button" class="resumen-back-btn" (click)="goBack()">Volver a estadísticas</button>
+    <button type="button" class="resumen-download-btn" (click)="downloadResumenAsImage()" title="Descargar resumen como imagen">
+      Descargar como imagen
+    </button>
+  </div>
+</div>
+
+<div class="resumen-loading" *ngIf="loading">
+  <p>Cargando...</p>
+</div>
+<div class="resumen-error" *ngIf="!loading && error">
+  <p>{{ error }}</p>
+  <button type="button" class="resumen-back-btn" (click)="goBack()">Volver</button>
+</div>

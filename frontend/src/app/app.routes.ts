@@ -1,0 +1,36 @@
+import { Routes } from '@angular/router';
+import { HomeComponent } from './components/home/home.component';
+import { PlayersComponent } from './components/players/players.component';
+import { PlayerDetailComponent } from './components/player-detail/player-detail.component';
+import { AdminComponent } from './components/admin/admin.component';
+import { PlayerFormComponent } from './components/player-form/player-form.component';
+import { SkillManagerComponent } from './components/skill-manager/skill-manager.component';
+import { TeamSkillFormComponent } from './components/team-skill-form/team-skill-form.component';
+import { GenericSkillFormComponent } from './components/generic-skill-form/generic-skill-form.component';
+import { AuxiliaryDataComponent } from './components/auxiliary-data/auxiliary-data.component';
+import { TechniqueManagerComponent } from './components/technique-manager/technique-manager.component';
+import { PlayerTechniquesComponent } from './components/player-techniques/player-techniques.component';
+import { TechniqueRankingComponent } from './components/technique-ranking/technique-ranking.component';
+import { PlayerResumenComponent } from './components/player-resumen/player-resumen.component';
+import { AdminPreferencesComponent } from './components/admin-preferences/admin-preferences.component';
+import { AdminFormationsComponent } from './components/admin-formations/admin-formations.component';
+
+export const routes: Routes = [
+    { path: '', component: HomeComponent },
+    { path: 'players', component: PlayersComponent },
+    { path: 'players/:id/resumen', component: PlayerResumenComponent },
+    { path: 'players/:id', component: PlayerDetailComponent },
+    { path: 'ranking', component: TechniqueRankingComponent },
+    { path: 'admin', component: AdminComponent },
+    { path: 'admin/preferences', component: AdminPreferencesComponent },
+    { path: 'admin/formations', component: AdminFormationsComponent },
+    { path: 'admin/player/new', component: PlayerFormComponent },
+    { path: 'admin/player/edit/:id', component: PlayerFormComponent },
+    { path: 'admin/skills', component: SkillManagerComponent },
+    { path: 'admin/skills/team/new', component: TeamSkillFormComponent },
+    { path: 'admin/skills/generic/new', component: GenericSkillFormComponent },
+    { path: 'admin/auxiliary', component: AuxiliaryDataComponent },
+    { path: 'admin/techniques', component: TechniqueManagerComponent },
+    { path: 'admin/techniques/player/:playerName', component: PlayerTechniquesComponent },
+    { path: '**', redirectTo: '' }
+];
