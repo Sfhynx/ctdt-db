@@ -68,6 +68,18 @@ Si no quieres usar Git, puedes descargar el proyecto como **ZIP** desde GitHub (
 
 Solo hay que hacerlo **una vez** (o cada vez que se descargue de nuevo el proyecto).
 
+### Opción fácil (Windows)
+
+En la carpeta raíz del proyecto hay un archivo **`ctdt-db.bat`**. Abre **Símbolo del sistema**, ve a la carpeta del proyecto y ejecuta:
+
+```bash
+ctdt-db.bat install
+```
+
+Ese comando instala las dependencias del frontend (npm) y restaura los paquetes del backend (.NET). Puede tardar uno o dos minutos.
+
+### Opción manual (Windows, Mac o Linux)
+
 1. Entra en la carpeta **frontend** del proyecto:
    ```bash
    cd frontend
@@ -76,7 +88,14 @@ Solo hay que hacerlo **una vez** (o cada vez que se descargue de nuevo el proyec
    ```bash
    npm install
    ```
-   Puede tardar uno o dos minutos. Cuando termine, no debe aparecer ningún error en rojo.
+3. Vuelve a la carpeta raíz del proyecto y restaura el backend:
+   ```bash
+   cd ..
+   dotnet restore backend/backend.csproj
+   ```
+   (En Windows puedes usar `backend\backend.csproj`.)
+
+Cuando termine, no debe aparecer ningún error en rojo.
 
 ---
 
@@ -84,17 +103,30 @@ Solo hay que hacerlo **una vez** (o cada vez que se descargue de nuevo el proyec
 
 Siempre que quieras usar la aplicación en tu ordenador:
 
+### Opción fácil (Windows)
+
+En **Símbolo del sistema**, ve a la carpeta del proyecto (la que contiene `ctdt-db.bat`) y ejecuta:
+
+```bash
+ctdt-db.bat start
+```
+
+Ese comando arranca a la vez el servidor (backend) y la interfaz (frontend).
+
+### Opción manual (cualquier sistema)
+
 1. Abre **Símbolo del sistema** o **Terminal**.
 2. Ve a la carpeta del proyecto y luego a **frontend**:
-   ```bash
-   cd ruta\donde\está\CTDT-APP\frontend
-   ```
-   (Sustituye `ruta\donde\está` por la ruta real, por ejemplo `Desktop\CTDT-APP`.)
-3. Ejecuta este comando:
+   - Windows: `cd ruta\donde\está\proyecto\frontend`
+   - Mac/Linux: `cd ruta/donde/está/proyecto/frontend`
+3. Ejecuta:
    ```bash
    npm run start:full
    ```
    Este comando arranca a la vez el servidor (backend) y la interfaz (frontend).
+
+### Después de arrancar
+
 4. Espera hasta que aparezcan mensajes como:
    - `Application started` o que el servidor esté escuchando en un puerto.
    - `Compiled successfully` o que Angular esté listo.
@@ -105,15 +137,23 @@ Siempre que quieras usar la aplicación en tu ordenador:
    ```
    Pulsa Intro. Deberías ver la página de inicio de **Dream Team DB**.
 
-**Importante:** No cierres la ventana donde ejecutaste `npm run start:full` mientras quieras usar la aplicación. Para pararla, cierra esa ventana o pulsa `Ctrl+C` en ella.
+**Importante:** No cierres la ventana donde se está ejecutando el comando mientras quieras usar la aplicación. Para pararla, cierra esa ventana o pulsa `Ctrl+C` en ella.
 
 ---
 
 ## Resumen rápido (ya con todo instalado)
 
+**Windows (con el .bat):**
+
 ```bash
-cd ruta\al\proyecto\CTDT-APP\frontend
-npm install
+cd ruta\al\proyecto
+ctdt-db.bat start
+```
+
+**Manual (cualquier sistema):**
+
+```bash
+cd ruta/al/proyecto/frontend
 npm run start:full
 ```
 
