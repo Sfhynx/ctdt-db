@@ -53,7 +53,7 @@ export class TechniqueManagerComponent implements OnInit {
 
     getImageUrl(cardImageUrl: string): string {
         if (!cardImageUrl) {
-            return '/tsubasa-logo.png';
+            return '';
         }
         if (cardImageUrl.startsWith('http')) {
             return cardImageUrl;
