@@ -501,6 +501,7 @@ public class PlayersController : ControllerBase
             .Include(t => t.TechType)
             .Include(t => t.PlayerBase)
             .Where(t => t.PlayerBaseId == playerBase.Id)
+            .OrderByDescending(t => t.Power)
             .ToListAsync();
 
         return techniques;
