@@ -71,8 +71,11 @@ export class PlayerDetailComponent implements OnInit {
   tooltipTechnique: any = null;
   allPlayers: Player[] = [];
 
-  /** Nombres de la pasiva/latente "Maestro de los duelos" (no aplica al jugador activo en comparativa porque el rival sí ha acertado) */
-  private readonly DUEL_MASTER_SKILL_NAMES = ['Maestro de los duelos', 'maestro de los duelos', 'Maestro de los duelos (Múltiple)'];
+  /** Detecta si el nombre de una skill es "Maestro de los duelos" (cualquier variante de mayúsculas/espacios). */
+  private isDuelMasterSkillName(name: string | null | undefined): boolean {
+    if (name == null || String(name).trim() === '') return false;
+    return (String(name).trim().toLowerCase()).includes('maestro de los duelos');
+  }
 
   // Compare tab: vs goalkeeper
   compareOpponentId: number | null = null;
@@ -982,12 +985,11 @@ export class PlayerDetailComponent implements OnInit {
     return Math.round(statPart + physicalPart);
   }
 
-  /** Momentum de una técnica del jugador actual usando solo bonos generales. En comparativa sí aplica la skill Maestro de los duelos; no se aplica afinidad ni el +100 por acertar duelo. */
+  /** Momentum de una técnica del jugador actual usando solo bonos generales (pestaña Comparativa). En Comparativa siempre se aplica Maestro de los duelos; no se aplica afinidad ni el +100 por acertar duelo. */
   getTechniqueMomentumWithGlobalBonuses(technique: Technique): number {
     if (!this.player) return 0;
     const type = this.normalizeTechniqueTypeForMomentum(technique.type ?? '');
-    const isDefenseType = type === 'entrada' || type === 'bloqueo' || type === 'intercepción';
-    const excludeDuelMaster = !isDefenseType; // Defensor sí aplica la skill Maestro de los duelos
+    const excludeDuelMaster = false; // En Comparativa siempre aplicamos Maestro de los duelos (solo en Enfrentamiento se excluye por diseño)
     let base: number;
     let ballTypeModifier = 0;
     if (type === 'remate') {
@@ -1017,13 +1019,13 @@ export class PlayerDetailComponent implements OnInit {
     } else {
       return 0;
     }
-    // En comparativa no se aplica bono de afinidad ni el +100 por acertar duelo; sí aplica la skill Maestro de los duelos.
     const modifiedPower = this.getModifiedTechniquePower(technique.power, technique, excludeDuelMaster);
     return Math.round((base * modifiedPower) / 100 + ballTypeModifier);
   }
 
+  /** GK en Comparativa: también aplicamos Maestro de los duelos (solo en Enfrentamiento se excluye para porteros). */
   private getGkTechniqueMomentumWithGlobalBonuses(gk: Player, technique: Technique, type: 'puño' | 'blocaje'): number {
-    const excludeDuelMaster = true;
+    const excludeDuelMaster = false;
     let base: number;
     if (type === 'puño') {
       const punch = this.getGkModifiedStatWithBonuses(gk, gk.stats.punch ?? 0, 'punch', this.teamSkillBonus, this.bondBonus, ['punch', 'power', 'speed'], this.formationId, excludeDuelMaster);
@@ -1099,17 +1101,17 @@ export class PlayerDetailComponent implements OnInit {
     return this.getMomentumForPlayerWithTechniques(p, techniques, row.typeKey);
   }
 
-  /** Momentum para un jugador con su lista de técnicas (bonos generales, sin afinidad ni +100 duelo; sí aplica skill Maestro de los duelos). */
+  /** Momentum para un jugador con su lista de técnicas en Comparativa (bonos generales; siempre aplica Maestro de los duelos). */
   private getMomentumForPlayerWithTechniques(pl: Player, techniques: Technique[], typeKey: string): number {
     const key = this.normalizeTechniqueTypeForMomentum(typeKey);
     const list = techniques.filter(t => this.normalizeTechniqueTypeForMomentum(t.type ?? '') === key);
     if (list.length === 0) return 0;
-    const isDefenseType = key === 'entrada' || key === 'bloqueo' || key === 'intercepción';
+    const applyDuelMaster = true; // En Comparativa siempre aplicamos Maestro de los duelos para todos los tipos
     const withMom = list.map(t => ({
       tech: t,
       mom: key === 'puño' || key === 'blocaje'
         ? this.getGkTechniqueMomentumWithGlobalBonuses(pl, t, key as 'puño' | 'blocaje')
-        : this.getOpponentFieldMomentum(pl, t, this.teamSkillBonus, this.bondBonus, this.formationId, isDefenseType, true, true)
+        : this.getOpponentFieldMomentum(pl, t, this.teamSkillBonus, this.bondBonus, this.formationId, applyDuelMaster, true, true)
     }));
     withMom.sort((a, b) => b.mom - a.mom);
     return withMom[0]?.mom ?? 0;
@@ -1278,11 +1280,10 @@ export class PlayerDetailComponent implements OnInit {
   // --- Comparativa: portero con todos los bonos (pasiva + latentes) y TS/Bono elegidos ---
 
   private collectAllBonusesForGk(gk: Player, excludeDuelMaster = false): SkillBonus[] {
-    const names = this.DUEL_MASTER_SKILL_NAMES;
-    const passive = (excludeDuelMaster && gk.passiveSkill?.name && names.includes(gk.passiveSkill.name))
+    const passive = (excludeDuelMaster && this.isDuelMasterSkillName(gk.passiveSkill?.name))
       ? [] : (gk.passiveSkill?.bonuses ?? []);
     const latents = (gk.latentSkills ?? [])
-      .filter(s => !excludeDuelMaster || !s.name || !names.includes(s.name))
+      .filter(s => !excludeDuelMaster || !this.isDuelMasterSkillName(s.name))
       .flatMap(s => s.bonuses ?? []);
     return [...passive, ...latents];
   }
@@ -1927,13 +1928,12 @@ export class PlayerDetailComponent implements OnInit {
   }
 
   private collectActiveBonuses(excludeDuelMaster = false): SkillBonus[] {
-    const names = this.DUEL_MASTER_SKILL_NAMES;
     const passive = (this.passiveSkillActive && this.player?.passiveSkill?.bonuses)
-      ? (excludeDuelMaster && this.player.passiveSkill?.name && names.includes(this.player.passiveSkill.name) ? [] : this.player.passiveSkill.bonuses)
+      ? (excludeDuelMaster && this.isDuelMasterSkillName(this.player.passiveSkill?.name) ? [] : this.player.passiveSkill.bonuses)
       : [];
     const latents = (this.player?.latentSkills ?? [])
       .filter(s => this.activeLatentSkills.has(s.id))
-      .filter(s => !excludeDuelMaster || !s.name || !names.includes(s.name))
+      .filter(s => !excludeDuelMaster || !this.isDuelMasterSkillName(s.name))
       .flatMap(s => s.bonuses ?? []);
     return [...passive, ...latents];
   }
