@@ -122,6 +122,10 @@
                             <button class="tab-btn" [class.active]="activeTab === 'techniques'" (click)="setActiveTab('techniques')">
                                 <span class="material-icons">bolt</span> Técnicas
                             </button>
+                            <button class="tab-btn" [class.active]="activeTab === 'faceoff'" (click)="setActiveTab('faceoff')"
+                                    *ngIf="player">
+                                <span class="material-icons">sports_mma</span> Enfrentamiento
+                            </button>
                             <button class="tab-btn" [class.active]="activeTab === 'compare'" (click)="setActiveTab('compare')"
                                     *ngIf="player">
                                 <span class="material-icons">compare_arrows</span> Comparativa
@@ -155,6 +159,33 @@
                                 </select>
                             </div>
                             <button class="reset-btn-global" (click)="resetModifiers()" title="Resetear todo" aria-label="Resetear todo">↻</button>
+                        </div>
+
+                        <!-- Modal selección rival/jugador (Enfrentamiento y Comparativa) -->
+                        <div *ngIf="(activeTab === 'faceoff' || activeTab === 'compare') && showCompareOpponentModal" class="compare-gk-modal-overlay" (click)="closeCompareOpponentModal()">
+                            <div class="compare-gk-modal" (click)="$event.stopPropagation()">
+                                <div class="compare-gk-modal-header">
+                                    <h3>{{ activeTab === 'compare' ? 'Elige un jugador para comparar' : (isGoalkeeper() ? 'Elige un jugador de campo' : 'Elige un rival') }}</h3>
+                                    <button type="button" class="compare-gk-modal-close" (click)="closeCompareOpponentModal()" aria-label="Cerrar">
+                                        <span class="material-icons">close</span>
+                                    </button>
+                                </div>
+                                <div class="compare-gk-modal-body">
+                                    <div class="compare-gk-grid">
+                                        <button *ngFor="let p of getCompareOpponents()" type="button" class="compare-gk-card"
+                                            [class.selected]="compareOpponentId === p.id"
+                                            (click)="selectCompareOpponent(p)">
+                                            <div class="compare-gk-card-image" [style.background-image]="'url(' + getImageUrl(p) + ')'"
+                                                [style.border-color]="getElementColor(p.element?.name ?? '')"></div>
+                                            <div class="compare-gk-card-info">
+                                                <span class="compare-gk-card-name">{{ p.name }}</span>
+                                                <span class="compare-gk-card-version">{{ p.version }}</span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <p *ngIf="getCompareOpponents().length === 0" class="no-data">No hay jugadores disponibles.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Stats Tab -->
@@ -747,8 +778,8 @@
                     </div>
                 </div>
 
-                <!-- Compare Tab: jugador actual vs portero -->
-                <div *ngIf="activeTab === 'compare'" class="tab-content compare-tab">
+                <!-- Enfrentamiento Tab: jugador actual vs rival (técnicas enfrentadas, bonos por jugador) -->
+                <div *ngIf="activeTab === 'faceoff'" class="tab-content compare-tab">
 
                     <div class="compare-controls">
                         <div class="compare-block compare-block-with-image">
@@ -802,33 +833,6 @@
                         </div>
                     </div>
 
-                    <!-- Modal selección rival -->
-                    <div *ngIf="showCompareOpponentModal" class="compare-gk-modal-overlay" (click)="closeCompareOpponentModal()">
-                        <div class="compare-gk-modal" (click)="$event.stopPropagation()">
-                            <div class="compare-gk-modal-header">
-                                <h3>{{ isGoalkeeper() ? 'Elige un jugador de campo' : 'Elige un rival' }}</h3>
-                                <button type="button" class="compare-gk-modal-close" (click)="closeCompareOpponentModal()" aria-label="Cerrar">
-                                    <span class="material-icons">close</span>
-                                </button>
-                            </div>
-                            <div class="compare-gk-modal-body">
-                                <div class="compare-gk-grid">
-                                    <button *ngFor="let p of getCompareOpponents()" type="button" class="compare-gk-card"
-                                        [class.selected]="compareOpponentId === p.id"
-                                        (click)="selectCompareOpponent(p)">
-                                        <div class="compare-gk-card-image" [style.background-image]="'url(' + getImageUrl(p) + ')'"
-                                            [style.border-color]="getElementColor(p.element?.name ?? '')"></div>
-                                        <div class="compare-gk-card-info">
-                                            <span class="compare-gk-card-name">{{ p.name }}</span>
-                                            <span class="compare-gk-card-version">{{ p.version }}</span>
-                                        </div>
-                                    </button>
-                                </div>
-                                <p *ngIf="getCompareOpponents().length === 0" class="no-data">No hay jugadores disponibles.</p>
-                            </div>
-                        </div>
-                    </div>
-
                     <div *ngIf="loadingOpponentTechniques" class="compare-loading">Cargando técnicas del rival...</div>
 
                     <div *ngIf="!loadingOpponentTechniques && getSelectedOpponent() && getCompareRowsFiltered().length > 0" class="compare-cards-wrapper">
@@ -868,6 +872,52 @@
 
                     <p *ngIf="getSelectedOpponent() && !loadingOpponentTechniques && opponentTechniques.length === 0" class="no-data">Este rival no tiene técnicas cargadas.</p>
                     <p *ngIf="getSelectedOpponent() && !loadingOpponentTechniques && opponentTechniques.length > 0 && getCompareRowsFiltered().length === 0" class="no-data">No hay enfrentamientos posibles con las técnicas disponibles.</p>
+                </div>
+
+                <!-- Comparativa Tab: mismo tipo de técnica entre varios jugadores (bonos generales) -->
+                <div *ngIf="activeTab === 'compare'" class="tab-content compare-tab">
+                    <div class="comparativa-header">
+                        <div class="comparativa-players-row">
+                            <ng-container *ngFor="let p of getComparativaPlayers(); let i = index">
+                                <div class="comparativa-player-chip" [style.--chip-color]="getComparativaColor(i)" [title]="p.name">
+                                    <div class="comparativa-player-chip-image" [style.background-image]="'url(' + getImageUrl(p) + ')'" [style.border-color]="getElementColor(p.element?.name ?? '')"></div>
+                                    <span class="comparativa-player-chip-name">{{ p.name }}</span>
+                                    <button *ngIf="i > 0" type="button" class="comparativa-player-chip-remove" (click)="removePlayerFromComparativa(p.id); $event.stopPropagation()" aria-label="Quitar de comparativa">
+                                        <span class="material-icons">close</span>
+                                    </button>
+                                </div>
+                            </ng-container>
+                            <button type="button" class="comparativa-add-player" (click)="openCompareOpponentModal()" title="Añadir jugador">
+                                <span class="material-icons">add</span>
+                                <span>Añadir</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div *ngIf="isComparativaLoading()" class="compare-loading">Cargando técnicas...</div>
+
+                    <div *ngIf="!isComparativaLoading() && getComparativaByTypeRows().length > 0" class="compare-cards-wrapper comparativa-bars-only">
+                        <div *ngFor="let row of getComparativaByTypeRows()" class="compare-row comparativa-row comparativa-row-horizontal">
+                            <div class="comparativa-type-icon" [title]="row.label">
+                                <img [src]="getComparativaTypeIconUrl(row.typeKey)" [alt]="row.label" class="comparativa-type-icon-img">
+                            </div>
+                            <div class="comparativa-bars-wrapper">
+                                <ng-container *ngFor="let p of getComparativaPlayers(); let i = index">
+                                    <div class="comparativa-bar-row" *ngIf="getComparativaMomentumForPlayer(i, row) > 0">
+                                        <div class="comparativa-bar-track">
+                                            <div class="comparativa-bar" [style.width.%]="getComparativaBarWidthPct(row, i)" [style.background]="getComparativaColor(i)" [title]="getComparativaMomentumForPlayer(i, row)">
+                                                <span class="comparativa-bar-name">{{ p.name }}</span>
+                                                <span class="comparativa-bar-value">{{ getComparativaMomentumForPlayer(i, row) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ng-container>
+                            </div>
+                        </div>
+                        <p class="compare-note">Bonos generales (Team Skill %, Bono %, Formación) para todos. Las pasivas y latentes de cada uno se aplican a sus técnicas.</p>
+                    </div>
+
+                    <p *ngIf="!isComparativaLoading() && getComparativaByTypeRows().length === 0" class="no-data">No hay técnicas cargadas o no hay tipos en común. Añade jugadores para comparar.</p>
                 </div>
                     </div>
                 </div>

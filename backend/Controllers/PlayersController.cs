@@ -455,35 +455,33 @@ public class PlayersController : ControllerBase
                 .Where(p => p.PlayerBaseId == playerBaseId)
                 .ToListAsync();
 
-            // Encontrar el jugador con el total de estadísticas más alto
+            // Encontrar el jugador con el total de estadísticas más alto (si existe alguno)
             var bestPlayer = playersWithSameName
                 .OrderByDescending(p => p.Stats.Total)
                 .FirstOrDefault();
 
-            if (bestPlayer != null)
+            // Siempre devolvemos el jugador base con técnicas, aunque no tenga versiones creadas todavía
+            result.Add(new PlayerWithTechniquesDto
             {
-                result.Add(new PlayerWithTechniquesDto
+                PlayerName = playerName,
+                CardImageUrl = bestPlayer?.CardImageUrl ?? string.Empty,
+                PlayerId = bestPlayer?.Id ?? 0,
+                TechniqueCount = techniques.Count,
+                Techniques = techniques.Select(t => new TechniqueDto
                 {
-                    PlayerName = playerName,
-                    CardImageUrl = bestPlayer.CardImageUrl,
-                    PlayerId = bestPlayer.Id,
-                    TechniqueCount = techniques.Count,
-                    Techniques = techniques.Select(t => new TechniqueDto
-                    {
-                        Id = t.Id,
-                        Name = t.Name,
-                        Type = t.Type,
-                        Power = t.Power,
-                        StaminaCost = t.StaminaCost,
-                        Description = t.Description,
-                        IsMain = false,
-                        IsCombined = t.IsCombined,
-                        PlayerName = t.PlayerName,
-                        AppliesLowBallBonus = t.TechType?.AppliesLowBallBonus ?? false,
-                        AppliesHighBallBonus = t.TechType?.AppliesHighBallBonus ?? false
-                    }).ToList()
-                });
-            }
+                    Id = t.Id,
+                    Name = t.Name,
+                    Type = t.Type,
+                    Power = t.Power,
+                    StaminaCost = t.StaminaCost,
+                    Description = t.Description,
+                    IsMain = false,
+                    IsCombined = t.IsCombined,
+                    PlayerName = t.PlayerName,
+                    AppliesLowBallBonus = t.TechType?.AppliesLowBallBonus ?? false,
+                    AppliesHighBallBonus = t.TechType?.AppliesHighBallBonus ?? false
+                }).ToList()
+            });
         }
 
         return result.OrderBy(p => p.PlayerName).ToList();

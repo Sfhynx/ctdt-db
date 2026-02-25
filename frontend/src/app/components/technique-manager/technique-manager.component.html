@@ -7,37 +7,74 @@
         </button>
     </div>
 
+    <p class="intro">Las técnicas se gestionan por <strong>nombre del jugador</strong> (player base), no por versión. Las versiones comparten las técnicas de su nombre.</p>
+
     <div *ngIf="loading" class="loading">
         <div class="spinner"></div>
-        <p>Cargando jugadores con técnicas...</p>
+        <p>Cargando nombres de jugador...</p>
     </div>
 
     <div *ngIf="error" class="error">
         <span class="material-icons error-icon">warning</span>
         <p>{{ error }}</p>
-        <button class="btn-retry" (click)="loadPlayersWithTechniques()">Reintentar</button>
+        <button class="btn-retry" (click)="loadData()">Reintentar</button>
     </div>
 
-    <div *ngIf="!loading && !error" class="players-grid">
-        <div *ngFor="let player of playersWithTechniques" 
-             class="player-card" 
-             (click)="editPlayerTechniques(player.playerId)"
-             [style.background-image]="'url(' + getImageUrl(player.cardImageUrl) + ')'">
-            <div class="card-overlay"></div>
-            <div class="card-content">
-                <h3 class="player-name">{{ player.playerName }}</h3>
-                <div class="card-footer">
-                    <div class="technique-count">
-                        <span class="material-icons">sports_soccer</span>
-                        <span>{{ player.techniqueCount }} {{ player.techniqueCount === 1 ? 'técnica' : 'técnicas' }}</span>
-                    </div>
-                </div>
+    <div *ngIf="!loading && !error" class="content">
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filterName">Buscar por nombre</label>
+                <input type="text" id="filterName" class="filter-input" [(ngModel)]="filterName"
+                       placeholder="Nombre del jugador...">
+            </div>
+            <div class="filter-group">
+                <label for="filterCountry">País</label>
+                <select id="filterCountry" class="filter-input filter-select" [(ngModel)]="filterCountryId">
+                    <option [ngValue]="null">Todos los países</option>
+                    <option *ngFor="let c of countries" [ngValue]="c.id">{{ c.name }}</option>
+                </select>
             </div>
         </div>
-    </div>
 
-    <div *ngIf="!loading && !error && playersWithTechniques.length === 0" class="no-data">
-        <span class="material-icons">info</span>
-        <p>No hay jugadores con técnicas registradas</p>
+        <div class="list-wrapper">
+            <table class="players-table" *ngIf="filteredPlayerBases.length > 0">
+                <thead>
+                    <tr>
+                        <th>Nombre del jugador</th>
+                        <th>País</th>
+                        <th class="col-count">Técnicas</th>
+                        <th class="col-action">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let pb of filteredPlayerBases" class="player-row">
+                        <td class="cell-name">{{ pb.name }}</td>
+                        <td class="cell-country">{{ pb.country?.name ?? '—' }}</td>
+                        <td class="cell-count">{{ getTechniqueCount(pb) }} {{ getTechniqueCount(pb) === 1 ? 'técnica' : 'técnicas' }}</td>
+                        <td class="cell-action">
+                            <button type="button" class="btn-edit" (click)="goToTechniques(pb)">
+                                <span class="material-icons">edit</span>
+                                Gestionar técnicas
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div *ngIf="!loading && !error && filteredPlayerBases.length === 0" class="no-data">
+            <span class="material-icons">info</span>
+            <p>{{ filterName || filterCountryId ? 'Ningún nombre coincide con el filtro' : 'No hay nombres de jugador cargados' }}</p>
+        </div>
+
+        <div class="go-to-other">
+            <label for="goToPlayerName">Gestionar técnicas de otro nombre (si no está en la lista)</label>
+            <div class="go-to-row">
+                <input type="text" id="goToPlayerName" class="filter-input" [(ngModel)]="goToPlayerName"
+                       placeholder="Nombre del jugador..."
+                       (keydown.enter)="goToTechniquesByName()">
+                <button type="button" class="btn-edit" (click)="goToTechniquesByName()">Ir</button>
+            </div>
+        </div>
     </div>
 </div>

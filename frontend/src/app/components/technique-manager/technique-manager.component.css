@@ -1,7 +1,7 @@
 .technique-manager-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 2rem 2rem 2rem;
+    padding: 2rem;
 }
 
 .header {
@@ -12,7 +12,7 @@
 }
 
 .header h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
@@ -32,12 +32,11 @@
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .btn-back:hover {
     background: #5568d3;
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -57,8 +56,7 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    to { transform: rotate(360deg); }
 }
 
 .error {
@@ -79,105 +77,210 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 1rem;
-    transition: all 0.3s ease;
 }
 
 .btn-retry:hover {
     background: #5568d3;
 }
 
-.players-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-}
-
-.player-card {
-    position: relative;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    min-height: 280px;
+/* Filtros */
+.filters {
     display: flex;
-    flex-direction: column;
-}
-
-.player-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
-}
-
-.card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%);
-    z-index: 1;
-}
-
-.card-content {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 1.5rem;
-}
-
-.player-name {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: white;
-    margin: 0;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.card-footer {
-    display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
     align-items: flex-end;
 }
 
-.technique-count {
+.filter-group {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: white;
-    font-weight: 500;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-.technique-count .material-icons {
-    font-size: 1.5rem;
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.filter-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    min-width: 200px;
+    background: #fff;
+    color: #111827;
+    font-family: inherit;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Mismo diseño que el input para el select */
+.filter-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Lista / tabla */
+.list-wrapper {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.players-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.players-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.players-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.player-row:hover {
+    background: #f9fafb;
+}
+
+.cell-name {
+    font-weight: 600;
+    color: #111827;
+}
+
+.cell-country {
+    color: #4b5563;
+}
+
+.col-count {
+    width: 100px;
+    text-align: center;
+}
+
+.cell-count {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.col-action {
+    width: 160px;
+    text-align: right;
+}
+
+.cell-action {
+    text-align: right;
+}
+
+.btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-edit:hover {
+    background: #5568d3;
+}
+
+.btn-edit .material-icons {
+    font-size: 1.1rem;
 }
 
 .no-data {
     color: #718096;
+    padding: 2rem;
 }
 
 .no-data .material-icons {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
     opacity: 0.5;
 }
 
-@media (max-width: 900px) {
-    .players-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+.intro {
+    margin: -0.5rem 0 1.25rem 0;
+    font-size: 0.95rem;
+    color: #6b7280;
 }
 
-@media (max-width: 500px) {
-    .players-grid {
-        grid-template-columns: 1fr;
+.go-to-other {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.go-to-other label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.go-to-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.go-to-row .filter-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.go-to-row .btn-edit {
+    flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+    .players-table th.col-count,
+    .players-table td.cell-count {
+        display: none;
+    }
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-input,
+    .filter-select {
+        min-width: 0;
     }
 }

@@ -26,10 +26,6 @@
         <div *ngIf="techniques.length === 0" class="no-techniques">
             <span class="material-icons">info</span>
             <p>No hay técnicas registradas para este jugador</p>
-            <button class="btn-create" (click)="openCreateModal()">
-                <span class="material-icons">add</span>
-                Crear Primera Técnica
-            </button>
         </div>
 
         <div class="techniques-grid">
@@ -74,7 +70,7 @@
         [visible]="showCreateModal"
         [technique]="editingTechnique"
         [playerName]="playerName"
-        [isGoalkeeper]="false"
+        [allowAllTechniqueTypes]="true"
         (save)="onTechniqueSave($event)"
         (cancel)="onTechniqueCancel()">
     </app-technique-form-modal>

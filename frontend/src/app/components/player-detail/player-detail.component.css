@@ -630,6 +630,161 @@
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
+/* Comparativa tab: cabecera compacta (solo imagen + nombre) y varias barras por jugador */
+.comparativa-header {
+    margin-bottom: 0.75rem;
+}
+.comparativa-players-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.comparativa-player-chip {
+    --chip-color: #6b7280;
+    position: relative;
+    width: 64px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--chip-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.comparativa-player-chip-image {
+    display: block;
+    width: 100%;
+    height: 80px;
+    background-size: cover;
+    background-position: center;
+    background-color: #f3f4f6;
+}
+.comparativa-player-chip-name {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 2px 4px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.comparativa-player-chip-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+}
+.comparativa-player-chip-remove:hover {
+    background: #dc2626;
+}
+.comparativa-add-player {
+    width: 64px;
+    height: 80px;
+    flex-shrink: 0;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.comparativa-add-player:hover {
+    border-color: #0d9488;
+    color: #0d9488;
+    background: #f0fdfa;
+}
+.comparativa-add-player .material-icons { font-size: 24px; }
+
+/* Fila horizontal: icono grande a la izquierda, barras a la derecha en fila */
+.comparativa-row-horizontal {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+}
+.comparativa-type-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+}
+.comparativa-type-icon-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+.comparativa-bars-wrapper {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.comparativa-bar-row {
+    display: flex;
+    align-items: center;
+}
+.comparativa-bar-track {
+    width: 100%;
+    height: 32px;
+    border-radius: 6px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+.comparativa-bar {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-width: 0;
+    transition: width 0.25s ease;
+    color: white;
+    box-sizing: border-box;
+}
+.comparativa-bar-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.comparativa-bar-value {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+    margin-left: 6px;
+}
+
 .compare-note {
     margin: 0.75rem 0 0 0;
     font-size: 0.8rem;

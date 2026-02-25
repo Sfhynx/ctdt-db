@@ -34,6 +34,12 @@ export interface CompareRow {
   attackerIsCurrent: boolean;
 }
 
+/** Fila de comparativa por tipo: mismo tipo de técnica entre dos jugadores (bonos generales) */
+export interface ComparativaByTypeRow {
+  typeKey: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-player-detail',
   standalone: true,
@@ -45,7 +51,7 @@ export class PlayerDetailComponent implements OnInit {
   player: Player | null = null;
   loading = true;
   error = '';
-  activeTab: 'stats' | 'ingame' | 'techniques' | 'compare' = 'stats'; // Default to stats tab
+  activeTab: 'stats' | 'ingame' | 'techniques' | 'faceoff' | 'compare' = 'stats'; // Default to stats tab. faceoff = enfrentamiento (bonos por jugador), compare = comparativa por tipo (bonos generales)
   statsSubTab: 'base' | 'ingame' = 'base'; // Sub-tab for stats: base or in-game
   rompebarrerasLevel: number = 0; // 0 to 4
   ballBonusType: 'none' | 'low' | 'high' = 'none';
@@ -79,6 +85,13 @@ export class PlayerDetailComponent implements OnInit {
   opponentTechniques: Technique[] = [];
   loadingOpponentTechniques = false;
   showCompareOpponentModal = false;
+
+  /** Comparativa tab: lista de jugadores añadidos para comparar (además del actual). */
+  comparativaPlayerIds: number[] = [];
+  /** Técnicas por jugador en comparativa (key = playerId). */
+  comparativaTechniquesByPlayerId = new Map<number, Technique[]>();
+  /** Jugadores cuyas técnicas se están cargando en comparativa. */
+  loadingComparativaPlayerIds = new Set<number>();
 
   /** Elementos con ventaja de afinidad (para cálculos). Cargados al iniciar. */
   elementsWithAdvantage: Element[] = [];
@@ -470,12 +483,22 @@ export class PlayerDetailComponent implements OnInit {
     });
   }
 
-  /** Jugadores que se pueden elegir como rival en Comparativa: si actual es GK solo campo; si no, todos */
+  /** Jugadores que se pueden elegir como rival (Enfrentamiento) o para añadir (Comparativa).
+   * Enfrentamiento: si actual es GK solo campo; si no, todos. Comparativa: mismo tipo que el actual (GK→solo GK, campo→solo campo). */
   getCompareOpponents(): Player[] {
-    if (this.isGoalkeeper()) {
-      return this.allPlayers.filter(p => !p.positions?.includes('PO'));
+    let list = this.allPlayers;
+    if (this.activeTab === 'compare' && this.player) {
+      // Comparativa: mismo tipo que el jugador actual (portero con porteros, campo con campo)
+      const currentIsGK = this.isGoalkeeper();
+      list = list.filter(p => p.positions?.includes('PO') === currentIsGK);
+      list = list.filter(p => p.id !== this.player!.id && !this.comparativaPlayerIds.includes(p.id));
+    } else {
+      // Enfrentamiento: si actual es GK solo jugadores de campo; si no, todos
+      if (this.isGoalkeeper()) {
+        list = list.filter(p => !p.positions?.includes('PO'));
+      }
     }
-    return this.allPlayers;
+    return list;
   }
 
   getSelectedOpponent(): Player | null {
@@ -504,10 +527,55 @@ export class PlayerDetailComponent implements OnInit {
   }
 
   selectCompareOpponent(player: Player): void {
-    this.compareOpponentId = player.id;
-    this.closeCompareOpponentModal();
-    this.loadOpponentTechniques();
+    if (this.activeTab === 'compare') {
+      this.addPlayerToComparativa(player);
+      this.closeCompareOpponentModal();
+    } else {
+      this.compareOpponentId = player.id;
+      this.closeCompareOpponentModal();
+      this.loadOpponentTechniques();
+    }
     this.cdr.detectChanges();
+  }
+
+  addPlayerToComparativa(player: Player): void {
+    if (!this.player || player.id === this.player.id || this.comparativaPlayerIds.includes(player.id)) return;
+    this.comparativaPlayerIds.push(player.id);
+    this.loadTechniquesForComparativaPlayer(player);
+  }
+
+  removePlayerFromComparativa(playerId: number): void {
+    this.comparativaPlayerIds = this.comparativaPlayerIds.filter(id => id !== playerId);
+    this.comparativaTechniquesByPlayerId.delete(playerId);
+    this.cdr.detectChanges();
+  }
+
+  loadTechniquesForComparativaPlayer(player: Player): void {
+    this.loadingComparativaPlayerIds.add(player.id);
+    this.apiService.getTechniquesByPlayerName(player.name).subscribe({
+      next: (techniques) => {
+        this.comparativaTechniquesByPlayerId.set(player.id, techniques);
+        this.loadingComparativaPlayerIds.delete(player.id);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingComparativaPlayerIds.delete(player.id);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** Lista ordenada de jugadores en comparativa: actual + añadidos. */
+  getComparativaPlayers(): Player[] {
+    if (!this.player) return [];
+    const others = this.comparativaPlayerIds
+      .map(id => this.allPlayers.find(p => p.id === id))
+      .filter((p): p is Player => p != null);
+    return [this.player, ...others];
+  }
+
+  isComparativaLoading(): boolean {
+    return this.loadingComparativaPlayerIds.size > 0;
   }
 
   loadOpponentTechniques(): void {
@@ -607,17 +675,17 @@ export class PlayerDetailComponent implements OnInit {
       this.getModifiedStat(this.player.stats.technique, 'technique');
   }
 
-  setActiveTab(tab: 'stats' | 'techniques' | 'compare'): void {
+  setActiveTab(tab: 'stats' | 'techniques' | 'faceoff' | 'compare'): void {
     this.activeTab = tab;
     // Load all techniques when switching to techniques tab if needed
     if (tab === 'techniques' && (this.techniquesTab === 'best' || this.techniquesTab === 'all') && this.allTechniques.length === 0) {
       this.loadAllTechniques();
     }
-    // Load current player techniques when switching to compare tab (for best remate/volea/cabezazo)
-    if (tab === 'compare' && this.player && this.allTechniques.length === 0) {
+    // Load current player techniques when switching to faceoff or compare tab
+    if ((tab === 'faceoff' || tab === 'compare') && this.player && this.allTechniques.length === 0) {
       this.loadAllTechniques();
     }
-    if (tab === 'compare' && this.compareOpponentId != null) {
+    if ((tab === 'faceoff' || tab === 'compare') && this.compareOpponentId != null) {
       this.loadOpponentTechniques();
     }
   }
@@ -887,6 +955,268 @@ export class PlayerDetailComponent implements OnInit {
     const shot = this.getInGameStatForCompare('shot', teamSkill, bond);
     const bonus = this.getBallSkillBonus(this.player.highBallSkill);
     return Math.round(shot * (1 + bonus / 100));
+  }
+
+  // --- Comparativa por tipo (pestaña Comparativa): bonos generales (teamSkillBonus, bondBonus, formationId) ---
+
+  /** getModifiedStat usando bonos generales del panel (para pestaña Comparativa por tipo). */
+  private getModifiedStatWithGlobalBonuses(baseStat: number, statName: StatName, excludeDuelMaster = true): number {
+    let stat = baseStat;
+    if (this.selectedStats.has(statName)) stat += 1000;
+    if (PHYSICAL_STATS.includes(statName as typeof PHYSICAL_STATS[number])) stat += this.getRompebarrerasPhysicalBonus();
+    else if (ATTACK_STATS.includes(statName as typeof ATTACK_STATS[number])) stat += this.getRompebarrerasAttackBonus();
+    else if (DEFENSE_STATS.includes(statName as typeof DEFENSE_STATS[number])) stat += this.getRompebarrerasDefenseBonus();
+    else if (SAVE_STATS.includes(statName as typeof SAVE_STATS[number])) stat += this.getRompebarrerasAttackBonus();
+    const formationBonus = this.getFormationBonusForCompare(statName, this.formationId, this.isGoalkeeper());
+    stat = Math.round(stat * (1 + (this.teamSkillBonus + formationBonus) / 100));
+    const skillBonus = this.getSkillStatBonus(statName, excludeDuelMaster);
+    stat = Math.round(stat * (1 + (skillBonus + this.bondBonus) / 100));
+    return stat;
+  }
+
+  private getInGameStatWithGlobalBonuses(statName: StatName, excludeDuelMaster = true): number {
+    if (!this.player) return 0;
+    const statPart = this.getModifiedStatWithGlobalBonuses(this.player.stats[statName] ?? 0, statName, excludeDuelMaster);
+    const physicalStatName = ASSOCIATE_PHYSICAL_STATS[statName];
+    const physicalPart = this.getModifiedStatWithGlobalBonuses(this.player.stats[physicalStatName] ?? 0, physicalStatName, excludeDuelMaster) / 2;
+    return Math.round(statPart + physicalPart);
+  }
+
+  /** Momentum de una técnica del jugador actual usando solo bonos generales. En comparativa sí aplica la skill Maestro de los duelos; no se aplica afinidad ni el +100 por acertar duelo. */
+  getTechniqueMomentumWithGlobalBonuses(technique: Technique): number {
+    if (!this.player) return 0;
+    const type = this.normalizeTechniqueTypeForMomentum(technique.type ?? '');
+    const isDefenseType = type === 'entrada' || type === 'bloqueo' || type === 'intercepción';
+    const excludeDuelMaster = !isDefenseType; // Defensor sí aplica la skill Maestro de los duelos
+    let base: number;
+    let ballTypeModifier = 0;
+    if (type === 'remate') {
+      base = this.getInGameStatWithGlobalBonuses('shot', excludeDuelMaster);
+    } else if (type === 'volea') {
+      base = this.getInGameStatWithGlobalBonuses('shot', excludeDuelMaster);
+      if (technique.appliesLowBallBonus !== false) {
+        ballTypeModifier = base * this.getBallSkillBonus(this.player.groundBallSkill) / 100;
+      }
+    } else if (type === 'cabezazo') {
+      base = this.getInGameStatWithGlobalBonuses('shot', excludeDuelMaster);
+      if (technique.appliesHighBallBonus !== false) {
+        ballTypeModifier = base * this.getBallSkillBonus(this.player.highBallSkill) / 100;
+      }
+    } else if (type === 'pase' || type === 'pared') {
+      base = this.getInGameStatWithGlobalBonuses('pass', excludeDuelMaster);
+    } else if (type === 'regate') {
+      base = this.getInGameStatWithGlobalBonuses('dribble', excludeDuelMaster);
+    } else if (type === 'entrada') {
+      base = this.getInGameStatWithGlobalBonuses('tackle', excludeDuelMaster);
+    } else if (type === 'bloqueo') {
+      base = this.getInGameStatWithGlobalBonuses('block', excludeDuelMaster);
+    } else if (type === 'intercepción') {
+      base = this.getInGameStatWithGlobalBonuses('intercept', excludeDuelMaster);
+    } else if (type === 'puño' || type === 'blocaje') {
+      return this.getGkTechniqueMomentumWithGlobalBonuses(this.player, technique, type as 'puño' | 'blocaje');
+    } else {
+      return 0;
+    }
+    // En comparativa no se aplica bono de afinidad ni el +100 por acertar duelo; sí aplica la skill Maestro de los duelos.
+    const modifiedPower = this.getModifiedTechniquePower(technique.power, technique, excludeDuelMaster);
+    return Math.round((base * modifiedPower) / 100 + ballTypeModifier);
+  }
+
+  private getGkTechniqueMomentumWithGlobalBonuses(gk: Player, technique: Technique, type: 'puño' | 'blocaje'): number {
+    const excludeDuelMaster = true;
+    let base: number;
+    if (type === 'puño') {
+      const punch = this.getGkModifiedStatWithBonuses(gk, gk.stats.punch ?? 0, 'punch', this.teamSkillBonus, this.bondBonus, ['punch', 'power', 'speed'], this.formationId, excludeDuelMaster);
+      const speed = this.getGkModifiedStatWithBonuses(gk, gk.stats.speed ?? 0, 'speed', this.teamSkillBonus, this.bondBonus, ['punch', 'power', 'speed'], this.formationId, excludeDuelMaster);
+      const power = this.getGkModifiedStatWithBonuses(gk, gk.stats.power ?? 0, 'power', this.teamSkillBonus, this.bondBonus, ['punch', 'power', 'speed'], this.formationId, excludeDuelMaster);
+      base = Math.round(punch + (speed + power) / 4);
+    } else {
+      const catchStat = this.getGkModifiedStatWithBonuses(gk, gk.stats.catchStat ?? 0, 'catchStat', this.teamSkillBonus, this.bondBonus, ['catchStat', 'power', 'technique'], this.formationId, excludeDuelMaster);
+      const power = this.getGkModifiedStatWithBonuses(gk, gk.stats.power ?? 0, 'power', this.teamSkillBonus, this.bondBonus, ['catchStat', 'power', 'technique'], this.formationId, excludeDuelMaster);
+      const techniqueStat = this.getGkModifiedStatWithBonuses(gk, gk.stats.technique ?? 0, 'technique', this.teamSkillBonus, this.bondBonus, ['catchStat', 'power', 'technique'], this.formationId, excludeDuelMaster);
+      base = Math.round(catchStat + (power + techniqueStat) / 4);
+    }
+    const modifiedPower = this.getGkModifiedTechniquePower(gk, technique.power, technique, excludeDuelMaster);
+    return Math.round((base * modifiedPower) / 100);
+  }
+
+  /** Mejor técnica del jugador actual por typeKey usando bonos generales (para pestaña Comparativa). */
+  getBestTechniqueWithGlobalBonuses(typeKey: string): Technique | null {
+    const key = this.normalizeTechniqueTypeForMomentum(typeKey);
+    const list = this.allTechniques.filter(t => this.normalizeTechniqueTypeForMomentum(t.type ?? '') === key);
+    if (list.length === 0) return null;
+    const withMom = list.map(t => ({ tech: t, mom: this.getTechniqueMomentumWithGlobalBonuses(t) }));
+    withMom.sort((a, b) => b.mom - a.mom);
+    return withMom[0]?.tech ?? null;
+  }
+
+  /** Momentum del jugador actual para un tipo con bonos generales. */
+  getMomentumWithGlobalBonuses(typeKey: string): number {
+    const tech = this.getBestTechniqueWithGlobalBonuses(typeKey);
+    if (!tech) return 0;
+    return this.getTechniqueMomentumWithGlobalBonuses(tech);
+  }
+
+  /** Mejor técnica del rival por typeKey usando bonos generales. */
+  getBestOpponentTechniqueWithGlobalBonuses(typeKey: string): Technique | null {
+    const opp = this.getSelectedOpponent();
+    if (!opp || this.opponentTechniques.length === 0) return null;
+    const key = this.normalizeTechniqueTypeForMomentum(typeKey);
+    const list = this.opponentTechniques.filter(t => this.normalizeTechniqueTypeForMomentum(t.type ?? '') === key);
+    if (list.length === 0) return null;
+    const isDefenseType = key === 'entrada' || key === 'bloqueo' || key === 'intercepción';
+    const withMom = list.map(t => ({
+      tech: t,
+      mom: key === 'puño' || key === 'blocaje'
+        ? this.getGkTechniqueMomentumWithGlobalBonuses(opp, t, key as 'puño' | 'blocaje')
+        : this.getOpponentFieldMomentum(opp, t, this.teamSkillBonus, this.bondBonus, this.formationId, isDefenseType, true, true)
+    }));
+    withMom.sort((a, b) => b.mom - a.mom);
+    return withMom[0]?.tech ?? null;
+  }
+
+  /** Momentum del rival para un tipo con bonos generales. */
+  getOpponentMomentumWithGlobalBonuses(typeKey: string): number {
+    const opp = this.getSelectedOpponent();
+    if (!opp || this.opponentTechniques.length === 0) return 0;
+    const tech = this.getBestOpponentTechniqueWithGlobalBonuses(typeKey);
+    if (!tech) return 0;
+    const key = this.normalizeTechniqueTypeForMomentum(typeKey);
+    if (key === 'puño' || key === 'blocaje') {
+      return this.getGkTechniqueMomentumWithGlobalBonuses(opp, tech, key);
+    }
+    const isDefenseType = key === 'entrada' || key === 'bloqueo' || key === 'intercepción';
+    return this.getOpponentFieldMomentum(opp, tech, this.teamSkillBonus, this.bondBonus, this.formationId, isDefenseType, true, true);
+  }
+
+  /** Momentum de un jugador en comparativa por tipo (índice en getComparativaPlayers()). */
+  getComparativaMomentumForPlayer(playerIndex: number, row: ComparativaByTypeRow): number {
+    const players = this.getComparativaPlayers();
+    if (playerIndex < 0 || playerIndex >= players.length) return 0;
+    const p = players[playerIndex];
+    if (playerIndex === 0) return this.getMomentumWithGlobalBonuses(row.typeKey);
+    const techniques = this.comparativaTechniquesByPlayerId.get(p.id) ?? [];
+    return this.getMomentumForPlayerWithTechniques(p, techniques, row.typeKey);
+  }
+
+  /** Momentum para un jugador con su lista de técnicas (bonos generales, sin afinidad ni +100 duelo; sí aplica skill Maestro de los duelos). */
+  private getMomentumForPlayerWithTechniques(pl: Player, techniques: Technique[], typeKey: string): number {
+    const key = this.normalizeTechniqueTypeForMomentum(typeKey);
+    const list = techniques.filter(t => this.normalizeTechniqueTypeForMomentum(t.type ?? '') === key);
+    if (list.length === 0) return 0;
+    const isDefenseType = key === 'entrada' || key === 'bloqueo' || key === 'intercepción';
+    const withMom = list.map(t => ({
+      tech: t,
+      mom: key === 'puño' || key === 'blocaje'
+        ? this.getGkTechniqueMomentumWithGlobalBonuses(pl, t, key as 'puño' | 'blocaje')
+        : this.getOpponentFieldMomentum(pl, t, this.teamSkillBonus, this.bondBonus, this.formationId, isDefenseType, true, true)
+    }));
+    withMom.sort((a, b) => b.mom - a.mom);
+    return withMom[0]?.mom ?? 0;
+  }
+
+  /** Colores para cada jugador en comparativa (por índice). */
+  private readonly COMPARATIVA_COLORS = ['#0d9488', '#7c3aed', '#dc2626', '#2563eb', '#ca8a04', '#059669', '#db2777', '#0891b2'];
+
+  getComparativaColor(playerIndex: number): string {
+    return this.COMPARATIVA_COLORS[playerIndex % this.COMPARATIVA_COLORS.length] ?? '#6b7280';
+  }
+
+  /** Porcentaje de ancho de barra en comparativa (escala común: el mayor valor = 100%). playerIndex = índice en getComparativaPlayers(). */
+  getComparativaBarWidthPct(row: ComparativaByTypeRow, playerIndex: number): number {
+    const players = this.getComparativaPlayers();
+    let max = 0;
+    for (let i = 0; i < players.length; i++) {
+      const m = this.getComparativaMomentumForPlayer(i, row);
+      if (m > max) max = m;
+    }
+    if (max === 0) return 0;
+    const value = this.getComparativaMomentumForPlayer(playerIndex, row);
+    return Math.round((value / max) * 1000) / 10;
+  }
+
+  /** Tipos de técnica a mostrar en la comparativa por tipo (mismo tipo entre ambos jugadores). */
+  private readonly COMPARATIVA_TYPE_ORDER: { key: string; label: string }[] = [
+    { key: 'remate', label: 'Remate' },
+    { key: 'volea', label: 'Volea' },
+    { key: 'cabezazo', label: 'Cabezazo' },
+    { key: 'pase', label: 'Pase' },
+    { key: 'pared', label: 'Pared' },
+    { key: 'regate', label: 'Regate' },
+    { key: 'entrada', label: 'Entrada' },
+    { key: 'bloqueo', label: 'Bloqueo' },
+    { key: 'intercepción', label: 'Intercepción' },
+    { key: 'puño', label: 'Puño' },
+    { key: 'blocaje', label: 'Blocaje' }
+  ];
+
+  /** URL del icono de un tipo de técnica para la comparativa (por typeKey). */
+  getComparativaTypeIconUrl(typeKey: string): string {
+    const key = (typeKey || '').toLowerCase();
+    const iconFile = key === 'intercepción' ? 'intercepcion.png' : key === 'puño' ? 'puno.png' : `${key}.png`;
+    return `${this.iconsBaseUrl}/${iconFile}`;
+  }
+
+  getComparativaByTypeRows(): ComparativaByTypeRow[] {
+    const rows = this.COMPARATIVA_TYPE_ORDER.map(row => ({ typeKey: row.key, label: row.label }));
+    const players = this.getComparativaPlayers();
+    return rows.filter(row => {
+      for (let i = 0; i < players.length; i++) {
+        if (this.getComparativaMomentumForPlayer(i, row) > 0) return true;
+      }
+      return false;
+    });
+  }
+
+  getComparativaLeftTechnique(row: ComparativaByTypeRow): Technique | null {
+    return this.getBestTechniqueWithGlobalBonuses(row.typeKey);
+  }
+
+  getComparativaRightTechnique(row: ComparativaByTypeRow): Technique | null {
+    return this.getBestOpponentTechniqueWithGlobalBonuses(row.typeKey);
+  }
+
+  getComparativaLeftMomentum(row: ComparativaByTypeRow): number {
+    return this.getMomentumWithGlobalBonuses(row.typeKey);
+  }
+
+  getComparativaRightMomentum(row: ComparativaByTypeRow): number {
+    return this.getOpponentMomentumWithGlobalBonuses(row.typeKey);
+  }
+
+  private getComparativaBarExponent(ratio: number): number {
+    if (ratio <= 1) return 10;
+    const ln = Math.log(ratio);
+    if (ln < 0.001) return 10;
+    return this.COMPARE_BAR_N_A + this.COMPARE_BAR_N_B / ln;
+  }
+
+  getComparativaBarLeftPct(row: ComparativaByTypeRow): number {
+    const left = this.getComparativaLeftMomentum(row);
+    const right = this.getComparativaRightMomentum(row);
+    if (left === 0 && right === 0) return 50;
+    if (right === 0) return 100;
+    if (left === 0) return 0;
+    const ratio = right / left;
+    if (ratio <= 1) {
+      if (ratio >= 0.999) return 50;
+      const ratioInv = left / right;
+      const n = this.getComparativaBarExponent(ratioInv);
+      const leftPct = 100 * Math.pow(ratioInv, n) / (1 + Math.pow(ratioInv, n));
+      return Math.round(leftPct * 10) / 10;
+    }
+    const n = this.getComparativaBarExponent(ratio);
+    const leftPct = 100 / (1 + Math.pow(ratio, n));
+    return Math.round(leftPct * 10) / 10;
+  }
+
+  getComparativaBarRightPct(row: ComparativaByTypeRow): number {
+    const left = this.getComparativaLeftMomentum(row);
+    const right = this.getComparativaRightMomentum(row);
+    if (left === 0 && right === 0) return 50;
+    if (left === 0) return 100;
+    if (right === 0) return 0;
+    return Math.round((100 - this.getComparativaBarLeftPct(row)) * 10) / 10;
   }
 
   /** Momentum de una técnica del jugador actual en comparativa. Defensor (entrada/bloqueo/intercepción) sí aplica Maestro de los duelos; atacante no. */
@@ -1241,10 +1571,10 @@ export class PlayerDetailComponent implements OnInit {
     return withMom[0]?.tech ?? null;
   }
 
-  /** Momentum de un jugador de campo (ataque o defensa). isOpponentDefending: defensor sí aplica Maestro de los duelos, atacante no. */
-  private getOpponentFieldMomentum(player: Player, technique: Technique, teamSkill: number, bond: number, formationId: string, isOpponentDefending = false): number {
+  /** Momentum de un jugador de campo (ataque o defensa). isOpponentDefending: defensor sí aplica skill Maestro de los duelos. skipAffinityBonus: true en Comparativa. skipDefensiveDuelPowerBonus: true en Comparativa (no aplicar +100 por acertar duelo). */
+  private getOpponentFieldMomentum(player: Player, technique: Technique, teamSkill: number, bond: number, formationId: string, isOpponentDefending = false, skipAffinityBonus = false, skipDefensiveDuelPowerBonus = false): number {
     const type = technique.type?.toLowerCase();
-    const excludeDuelMaster = !isOpponentDefending; // Defensor sí aplica, atacante no
+    const excludeDuelMaster = !isOpponentDefending; // Defensor sí aplica la skill Maestro de los duelos
     const associatedStats = this.getAssociatedStatsForTechnique(type);
     let baseStat = 0;
     let ballMod = 0;
@@ -1271,8 +1601,11 @@ export class PlayerDetailComponent implements OnInit {
     } else if (type === 'intercepción') {
       baseStat = this.getFieldPlayerStatWithBonuses(player, 'intercept', excludeDuelMaster, associatedStats, teamSkill, bond, formationId);
     } else return 0;
-    let powerBase = technique.power + (this.player && this.hasAffinityAdvantage(player.element?.name ?? '', this.player.element?.name ?? '') ? this.AFFINITY_POWER_BONUS : 0);
-    if (isOpponentDefending) powerBase += this.DEFENSIVE_DUEL_POWER_BONUS; // Adivinar duelo: +100 en defensa (campo, no portero)
+    let powerBase = technique.power;
+    if (!skipAffinityBonus && this.player && this.hasAffinityAdvantage(player.element?.name ?? '', this.player.element?.name ?? '')) {
+      powerBase += this.AFFINITY_POWER_BONUS;
+    }
+    if (isOpponentDefending && !skipDefensiveDuelPowerBonus) powerBase += this.DEFENSIVE_DUEL_POWER_BONUS; // +100 por acertar duelo: no en Comparativa
     const modifiedPower = this.getFieldPlayerModifiedTechniquePower(player, powerBase, technique, excludeDuelMaster);
     return Math.round((baseStat * modifiedPower) / 100 + ballMod);
   }

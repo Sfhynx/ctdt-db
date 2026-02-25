@@ -10,7 +10,7 @@ import { TechType } from '../../models/tech-type.model';
     imports: [CommonModule, FormsModule],
     templateUrl: './technique-form-modal.component.html',
     styleUrl: './technique-form-modal.component.css',
-    inputs: ['visible', 'technique', 'playerName', 'playerPositions', 'techTypes', 'isGoalkeeper']
+    inputs: ['visible', 'technique', 'playerName', 'playerPositions', 'techTypes', 'isGoalkeeper', 'allowAllTechniqueTypes']
 })
 export class TechniqueFormModalComponent implements OnInit, OnChanges {
     @Input() visible: boolean = false;
@@ -20,7 +20,9 @@ export class TechniqueFormModalComponent implements OnInit, OnChanges {
     @Input() playerPositions: string[] = [];
     /** Tipos de técnica desde la API; si hay datos, solo se muestran los permitidos para las posiciones del jugador. */
     @Input() techTypes: TechType[] = [];
-    @Input() isGoalkeeper: boolean = false; // Para filtrar tipos de técnicas
+    @Input() isGoalkeeper: boolean = false; // Para filtrar tipos de técnicas (cuando no hay allowAllTechniqueTypes)
+    /** Si true, se muestran todos los tipos (campo + portero). Uso: administración de técnicas por nombre, sin versión. */
+    @Input() allowAllTechniqueTypes: boolean = false;
     
     @Output() save = new EventEmitter<Technique>();
     @Output() cancel = new EventEmitter<void>();
@@ -58,8 +60,11 @@ export class TechniqueFormModalComponent implements OnInit, OnChanges {
         'Blocaje'
     ];
 
-    /** Tipos de técnica a mostrar: desde API filtrados por posiciones del jugador, o lista fija si no hay API. */
+    /** Tipos de técnica a mostrar: desde API filtrados por posiciones, lista fija por isGoalkeeper, o todos si allowAllTechniqueTypes. */
     get techniqueTypes(): string[] {
+        if (this.allowAllTechniqueTypes) {
+            return [...this.fieldPlayerTypes, ...this.goalkeeperTypes];
+        }
         if (this.techTypes?.length > 0) {
             const allowed = this.techTypes.filter(tt => {
                 const codes = tt.allowedPositionCodes ?? [];
